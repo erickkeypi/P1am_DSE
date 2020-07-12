@@ -6,19 +6,25 @@
 #include <Ethernet.h>
 #include <MemoryFree.h>;
 
+#define NUMBER_OF_DSE 2
+#define NUMBER_OF_MODBUS_CLIENTS 8
+#define MODBUS_TIMEOUT 200
+#define MODBUS_RECONNECT_TIME 30000
 /////////////////////////////////////////////////////
 //UTILIDADES
 //MemoryFree Frame
 unsigned long frame=0;
 unsigned long beforeFrame = 0;
 TimeEvent frameEvent = TimeEvent(1000);
-TimeEvent dseReconnect = TimeEvent(1000);
+
+//////////////////////////////////////////////////////
+//RECONNECT
+TimeEvent dseReconnect = TimeEvent(MODBUS_RECONNECT_TIME);
 //////////////////////////////////////////////////////
 //CONFIGURACION ETHERNET-MODBUS
 byte mac[] = {0x60, 0x52, 0xD0, 0x06, 0x68, 0x98};//P1AM-ETH mac
 IPAddress ip(192, 168, 137, 177);
 
-#define NUMBER_OF_DSE 2
 int dseHR[NUMBER_OF_DSE][37];
 bool dseAlarms[NUMBER_OF_DSE][150];
 bool dseErrorComm[NUMBER_OF_DSE];
@@ -34,7 +40,6 @@ IPAddress servers[NUMBER_OF_DSE]={//IP Addresses of the Servers
   IPAddress(192, 168, 137,  126)
 };
 
-#define NUMBER_OF_MODBUS_CLIENTS 8
 EthernetServer server(502);
 ModbusTCPServer modbusTCPServer;
 EthernetClient clients[NUMBER_OF_MODBUS_CLIENTS];
@@ -50,14 +55,17 @@ void setup(){
   Serial.println("INIT");
   frameEvent.repeat();
   frameEvent.start();
+
+  ///////////////////////
+  //reconnect
   dseReconnect.repeat();
   dseReconnect.start();
 
   //////////////////////
   //ETHERNET-MODBUS
   Ethernet.begin(mac, ip);
-  modbusTCPClient[0].setTimeout(100);
-  modbusTCPClient[1].setTimeout(100);
+  modbusTCPClient[0].setTimeout(MODBUS_TIMEOUT);
+  modbusTCPClient[1].setTimeout(MODBUS_TIMEOUT);
 
   server.begin();
   if(!modbusTCPServer.begin()){
@@ -85,6 +93,12 @@ void loop(){
   updateHoldingRegisters();
   handleModbusClients();
 
+  if(dseReconnect.run()){
+    for(int i=0; i<NUMBER_OF_DSE; i++){
+      dseErrorComm[i]=false;
+    }
+  }
+
   /////////////////////////////
   //UTILIDADES
   updateFrame();
@@ -101,11 +115,7 @@ void loop(){
 
   }
 
-  if(dseReconnect.run()){
-    for(int i=0; i<NUMBER_OF_DSE; i++){
-      dseErrorComm[i]=false;
-    }
-  }
+
 }//FIN LOOP
 
 ////////////////////////////////////////////////
