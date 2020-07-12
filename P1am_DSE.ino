@@ -25,6 +25,11 @@ IPAddress servers[2]={//IP Addresses of the Servers
 unsigned long frame=0;
 unsigned long beforeFrame = 0;
 
+TimeEvent frameEvent = TimeEvent(1000);
+
+int dse1HR[37];
+int dse2HR[37];
+
 
 void setup(){
   Serial.begin(115200);
@@ -35,7 +40,8 @@ void setup(){
   modbusTCPClient[0].setTimeout(500);
   modbusTCPClient[1].setTimeout(500);
 
-
+  frameEvent.repeat();
+  frameEvent.start();
 }
 
 void loop(){
@@ -48,7 +54,13 @@ void loop(){
       Serial.println("Modbus TCP Client connected");
     }
   } else {
-    Serial.println("Client[0] conected");
+    modbusTCPClient[0].requestFrom(HOLDING_REGISTERS,39426,37);
+    if(modbusTCPClient[0].available()){
+      for(int i=0;i<37;i++){
+        dse1HR[i] = modbusTCPClient[0].read();
+      }
+    }
+    //Serial.println("Client[0] conected");
   }
   if (!modbusTCPClient[1].connected()) {// client not connected, start the Modbus TCP client
     Serial.print("Attempting to connect to Modbus TCP server at IP:");
@@ -59,14 +71,21 @@ void loop(){
       Serial.println("Modbus TCP Client connected");
     }
   } else {
-    Serial.println("Client[1] conected");
+    modbusTCPClient[1].requestFrom(HOLDING_REGISTERS,39426,37);
+    if(modbusTCPClient[1].available()){
+      for(int i=0;i<37;i++){
+        dse2HR[i] = modbusTCPClient[1].read();
+      }
+    }
+    //Serial.println("Client[1] conected");
   }
   updateFrame();
-  Serial.print("Frame: ");
-  Serial.println(frame);
-  printMemory();
-  delay(1000);
 
+  if(frameEvent.run()){
+    Serial.print("Frame: ");
+    Serial.println(frame);
+    printMemory();
+  }
 }
 
 void printMemory(){
