@@ -3,6 +3,9 @@
 
 //cada 30 dias se debe activar un coil para que la cmore actualice las fechas de los DSE
 //se necesita registros para guardar la prioridad de los gen y un coil para el error de prioridad
+//limpiar las alarmas de un dse que se haya desconectado
+//schedule
+
 #include <P1AM.h>
 #include <ArduinoRS485.h>
 #include <ArduinoModbus.h>
@@ -131,6 +134,11 @@ void loop(){
 
   busLive = gen1Breaker || gen2Breaker || gen3Breaker || gen4Breaker || master1BusAvailable || master2BusAvailable || master3BusAvailable || master4BusAvailable;
   generalCommonAlarm = gen1CommonAlarm || gen2CommonAlarm || gen3CommonAlarm || gen4CommonAlarm || master1CommonAlarm || master2CommonAlarm || master3CommonAlarm || master4CommonAlarm;
+
+  bool gen1PriorityError = gen1Priority != 0 && (gen1Priority == gen2Priority || gen1Priority == gen3Priority || gen1Priority == gen4Priority);
+  bool gen2PriorityError = gen2Priority != 0 && (gen2Priority == gen3Priority || gen3Priority==gen4Priority);
+  bool gen3PriorityError = gen3Priority != 0 && gen4Priority == gen4Priority;
+  gensetPriorityError = gen1PriorityError || gen2PriorityError || gen3PriorityError;
 
   handleModbusClients();
   readDseAlarms();
