@@ -13,7 +13,6 @@
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 //HACER LA LOGICA PARA ACTUALIZAR LA FECHA DE LOS DSE
-//HACER LOGICA PARA LIMPIAR LAS ALARMAS DE UN MODULO QUE SE HAYA DESCONECTADO
 //HACER SCHEDULE
 //HACER LOG DE ERRORES EN SD
 //HACER LED DE ERROR Y LED DE WARNING
@@ -29,7 +28,8 @@
 #include <TimeEvent.h>
 #include <SPI.h>
 #include <Ethernet.h>
-#include <MemoryFree.h>;
+#include <RTCZero.h>
+#include <MemoryFree.h>
 
 //////////////////////////////////////////////////////
 //MACROS
@@ -38,6 +38,7 @@
 #define MODBUS_TIMEOUT 200
 #define MODBUS_RECONNECT_TIME 30000
 #define UPDATE_DATE_PERIOD 1296000000 //LA FECHA DE LOS DSE SE ACTUALIZAN CADA 15 DIAS
+#define RTC_UPDATE_TIME 60000 // se actualiza el rtc cada minuto
 
 //////////////////////////////////////////////////////
 //UTILIDADES
@@ -49,15 +50,18 @@ TimeEvent frameEvent = TimeEvent(1000);
 bool debug = true;
 bool debugUtilidades = false;
 
+RTCZero rtc;
 //////////////////////////////////////////////////////
 //TIMER UTILIZADO PARA ACTUALIZAR LA FECHA DE LOS DSE
 TimeEvent updateDateEvent = TimeEvent(UPDATE_DATE_PERIOD);
 
 //////////////////////////////////////////////////////
 //TIMER UTILIZADO PARA LA RECONECCION DE LOS DSE CUANDO SE PIERDE LA COMUNICACION
-
 TimeEvent dseReconnect = TimeEvent(MODBUS_RECONNECT_TIME);
 
+//////////////////////////////////////////////////////
+//TIMER UTILIZADO PARA LA ACTUALIZAION DEL RTC
+TimeEvent rtcUpdate = TimeEvent(RTC_UPDATE_TIME);
 //////////////////////////////////////////////////////
 //ARRAYS
 int dseIR[NUMBER_OF_DSE][37];//alarmas leidas
@@ -134,6 +138,8 @@ void setup(){
   frameEvent.repeat();
   frameEvent.start();
 
+  rtc.begin();
+
   //////////////////////////////////////////////////////
   //COMFIGURANDO TIMER DE ACTUALIZACION DE FECHAS
   updateDateEvent.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
@@ -143,6 +149,11 @@ void setup(){
   //CONFIGURANDO TIMER DE RECONECCION
   dseReconnect.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
   dseReconnect.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
+
+  //////////////////////////////////////////////////////
+  //CONFIGURANDO TIMER DE RTC
+  rtcUpdate.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
+  rtcUpdate.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
 
   //////////////////////
   //ETHERNET-MODBUS
@@ -177,6 +188,9 @@ void setup(){
 
   initializeArrays();//inicializando los arrays
 
+  connectModules();
+  readModuleDate();
+
 }//FIN SETUP
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -205,6 +219,10 @@ void loop(){
   //TIMER DE ACTUALIZACION DE FECHA DE LOS MODULOS
   if(updateDateEvent.run()){
     //activar coil de update date
+  }
+
+  if(rtcUpdate.run()){
+    readModuleDate();
   }
 
   //ACTUALIZANDO LOS REGISTROS MODBUS

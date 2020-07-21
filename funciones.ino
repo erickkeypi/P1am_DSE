@@ -49,10 +49,30 @@ void handleModbusClients(){//funcion que maneja la conexion de los clientes
   }
 }
 
+void connectModules(){
+  for(int d=0;d<NUMBER_OF_DSE;d++){
+    if (!modbusTCPClient[d].connected()) {// client not connected, start the Modbus TCP client
+      if(debug){
+        Serial.print("Attempting to connect to Modbus TCP server at IP:");
+        Serial.println(servers[d]);
+      }
+
+      if (!modbusTCPClient[d].begin(servers[d])) {
+        if(debug){Serial.print("Modbus TCP Client failed to connect!\nTrying again in ");Serial.print(MODBUS_RECONNECT_TIME);Serial.println(" seconds");}
+        dseErrorComm[d]=true;//SI NO SE LOGRA LA CONEXION SE ACTIVA EL ERROR DE CONEXION DEL DSE ACTUAL
+      } else {
+        if(debug){Serial.println("Modbus TCP Client connected");}
+        dseErrorComm[d]=false;//SI SE LOGRA LA CONEXION SE BORRA EL ERROR DE CONEXION DEL DSE ACTUAL
+      }
+    }
+  }
+}
+
 void readDseAlarms(){//esta funcion lee los registros de alarma de los DSE
 
   for(int d=0;d<NUMBER_OF_DSE;d++){
     if(dseErrorComm[d]){//SI HAY UN ERROR DE CONEXION CON EL DSE ACTUAL SE SIGUE CON EL SIGUIENTE
+      limpiarAlarma(d);//SE LIMPIAN LAS ALARMAS DEL MODULO QUE TIENE UN ERROR DE CONEXION
       continue;
     }
 
@@ -63,7 +83,7 @@ void readDseAlarms(){//esta funcion lee los registros de alarma de los DSE
       }
 
       if (!modbusTCPClient[d].begin(servers[d])) {
-        if(debug){Serial.println("Modbus TCP Client failed to connect!");}
+        if(debug){Serial.print("Modbus TCP Client failed to connect!\nTrying again in ");Serial.print(MODBUS_RECONNECT_TIME);Serial.println(" seconds");}
         dseErrorComm[d]=true;//SI NO SE LOGRA LA CONEXION SE ACTIVA EL ERROR DE CONEXION DEL DSE ACTUAL
       } else {
         if(debug){Serial.println("Modbus TCP Client connected");}
@@ -171,4 +191,40 @@ void test(){
       dseIR[i][j]=12657;
     }
   }
+}
+
+void limpiarAlarma(int modulo){
+  for(int j=0;j<150;j++){
+    dseAlarms[modulo][j]=0;
+  }
+}
+
+void readModuleDate(){
+  if(!dseErrorComm[0] && modbusTCPClient[0].connected()){
+    if(modbusTCPClient[0].requestFrom(HOLDING_REGISTERS,1792,2)){
+      if(modbusTCPClient[0].available()){
+        unsigned long time = modbusTCPClient[0].read() << 16 | modbusTCPClient[0].read();
+        rtc.setEpoch(time);
+        Serial.print("Updating RTC -> ");
+        Serial.print(getTime());
+        Serial.print("  ");
+        Serial.println(getDate());
+      }
+    }
+  } else {
+    Serial.println("Error trying to get date and time");
+  }
+}
+
+String twoDigits(long d){
+  if(d<10){
+    return "0" + String(d);
+  }
+  return String(d);
+}
+String getTime(){
+  return "Time: " + twoDigits(rtc.getHours()) + ":" + twoDigits(rtc.getMinutes()) + ":" + twoDigits(rtc.getSeconds());
+}
+String getDate(){
+  return "Date: " + twoDigits(rtc.getDay()) + "/" + twoDigits(rtc.getMonth()) + "/" + twoDigits(rtc.getYear());
 }
