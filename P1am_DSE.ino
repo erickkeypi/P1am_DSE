@@ -17,6 +17,7 @@
 //HACER SCHEDULE
 //HACER LOG DE ERRORES EN SD
 //HACER LED DE ERROR Y LED DE WARNING
+//HACER UN ESTADO EN EL QUE ESTA ACTIVO UN ERROR Y NO EJECUTAR MODBUS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -46,6 +47,7 @@ unsigned long frame=0;
 unsigned long beforeFrame = 0;
 TimeEvent frameEvent = TimeEvent(1000);
 bool debug = true;
+bool debugUtilidades = false;
 
 //////////////////////////////////////////////////////
 //TIMER UTILIZADO PARA ACTUALIZAR LA FECHA DE LOS DSE
@@ -124,7 +126,8 @@ void setup(){
   //////////////////////////////////////////////////////
   //UTILIDADES
   Serial.begin(115200);
-  while(!Serial){}
+  delay(2000);
+  //while(!Serial){}
   if(debug){
     Serial.println("INIT");
   }

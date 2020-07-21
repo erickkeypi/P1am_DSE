@@ -1,4 +1,5 @@
 void initializeArrays(){
+  if(debug){Serial.println("Arrays Initialized");}
     for(int i=0;i<NUMBER_OF_DSE;i++){
       for(int j=0;j<150;j++){
         dseAlarms[i][j]=0;
@@ -150,7 +151,7 @@ void utilidades(){
   frame = micros() - beforeFrame;
   beforeFrame = micros();
   //printing frame time and memory usage
-  if(frameEvent.run()){
+  if(frameEvent.run() && debugUtilidades){
     Serial.print("Frame: ");
     Serial.println(frame);
     Serial.print(F("MEM FREE: "));
