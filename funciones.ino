@@ -214,8 +214,9 @@ void utilidades(){
       Serial.print(schHolding[i]);
       Serial.print(" ");
     }
+    Serial.println();
   }
-  Serial.println();
+
 }
 
 void test(){
