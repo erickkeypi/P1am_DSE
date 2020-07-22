@@ -12,7 +12,6 @@
 */
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-//HACER LA LOGICA PARA ACTUALIZAR LA FECHA DE LOS DSE
 //HACER SCHEDULE
 //HACER LOG DE ERRORES EN SD
 //HACER LED DE ERROR Y LED DE WARNING
@@ -38,7 +37,7 @@
 #define MODBUS_TIMEOUT 200
 #define MODBUS_RECONNECT_TIME 30000
 #define UPDATE_DATE_PERIOD 1296000000 //LA FECHA DE LOS DSE SE ACTUALIZAN CADA 15 DIAS
-#define RTC_UPDATE_TIME 60000 // se actualiza el rtc cada minuto
+#define RTC_UPDATE_TIME 300000 // se actualiza el rtc cada 5 minutos
 
 //////////////////////////////////////////////////////
 //UTILIDADES
@@ -50,10 +49,14 @@ TimeEvent frameEvent = TimeEvent(1000);
 bool debug = true;
 bool debugUtilidades = false;
 
-RTCZero rtc;
+RTCZero rtc;//RTC
+
 //////////////////////////////////////////////////////
 //TIMER UTILIZADO PARA ACTUALIZAR LA FECHA DE LOS DSE
 TimeEvent updateDateEvent = TimeEvent(UPDATE_DATE_PERIOD);
+unsigned long updateDateLastTime = 0;//variable complementaria utilizada para hacer que el boton deje de estar presionado
+bool updatingDate = false;//variable complementaria para actualizar la fecha de los DSE
+bool updateModulesDates = false;//VARIABLE QUE SE ACTIVA CUANDO SE VAYAN A ACTUALIZAR LOS MODULOS DSE
 
 //////////////////////////////////////////////////////
 //TIMER UTILIZADO PARA LA RECONECCION DE LOS DSE CUANDO SE PIERDE LA COMUNICACION
@@ -61,14 +64,14 @@ TimeEvent dseReconnect = TimeEvent(MODBUS_RECONNECT_TIME);
 
 //////////////////////////////////////////////////////
 //TIMER UTILIZADO PARA LA ACTUALIZAION DEL RTC
-TimeEvent rtcUpdate = TimeEvent(RTC_UPDATE_TIME);
+TimeEvent rtcUpdate = TimeEvent(10000);//Al principio el RTC trata de actualizarse cada 10 segundos luego pasa al tiempo definido por UPDATE_DATE_PERIOD
+
 //////////////////////////////////////////////////////
 //ARRAYS
 int dseIR[NUMBER_OF_DSE][37];//alarmas leidas
 bool dseAlarms[NUMBER_OF_DSE][150];//bits de las alarmas
 bool dseErrorComm[NUMBER_OF_DSE];//error de comunicacion
 
-bool updateModulesDates = false;//VARIABLE QUE SE ACTIVA CUANDO SE VAYAN A ACTUALIZAR LOS MODULOS DSE
 
 //////////////////////////////////////////////////////
 //VARIABLES PARA DETERMINAR SI EL BUS ESTA CALIENTE
@@ -112,8 +115,8 @@ ModbusTCPClient modbusTCPClient[8]={
 //IPs DE LOS MODULOS DSE
 //AGREGAR TANTAS IPs COMO MODULOS DSE
 IPAddress servers[NUMBER_OF_DSE]={
-  IPAddress(192, 168, 137,  128),
-  IPAddress(192, 168, 137,  126)
+  IPAddress(192, 168, 137,  126),
+  IPAddress(192, 168, 137,  128)
 };
 
 //////////////////////////////////////////////////////
@@ -129,15 +132,19 @@ int client_cnt=0;//VARIABLE QUE GUARDA EL NUMERO DE CLIENTES CONECTADOS
 void setup(){
   //////////////////////////////////////////////////////
   //UTILIDADES
-  Serial.begin(115200);
-  delay(2000);
-  //while(!Serial){}
-  if(debug){
-    Serial.println("INIT");
-  }
+  pinMode(LED_BUILTIN,OUTPUT);//LED FRONTAL
+  pinMode(SWITCH_BUILTIN,INPUT);//SWITCH FRONTAL
+  Serial.begin(115200);//COMUNICACION SERIAL
+  delay(2000);//RETARDO PARA EL INICIO DEL PROGRAMA
   frameEvent.repeat();
   frameEvent.start();
 
+  //while(!Serial){}
+  if(debug){
+    Serial.println(F("\n**********INIT**********"));
+  }
+
+  Serial.println(F("> Iniciando RTC"));
   rtc.begin();
 
   //////////////////////////////////////////////////////
@@ -169,14 +176,16 @@ void setup(){
 
   //////////////////////////////////////////////////////
   //INICIANDO SERVIDOR MODBUS
+  Serial.println(F("> Iniciando servidor Modbus"));
   server.begin();
   if(!modbusTCPServer.begin() && debug){
-    Serial.println("Failed to start Modbus TCP server");
+    Serial.print(F("> Fallo al iniciar servidor Modbus, IP: "));
+    Serial.println(ip);
     //ACTIVAR LED DE ERROR
     while(1);
   }else{
     if(debug){
-      Serial.println("Modbus TCP server initialized");
+      Serial.println(F("> Servidor Modbus iniciado"));
     }
   }
   //////////////////////////////////////////////////////
@@ -185,6 +194,7 @@ void setup(){
   modbusTCPServer.configureCoils(0x00,100);
   modbusTCPServer.configureInputRegisters(0x00,NUMBER_OF_DSE*37);
   modbusTCPServer.configureHoldingRegisters(0x00,10);
+  Serial.println(F("> Registros Modbus configurados"));
 
   initializeArrays();//inicializando los arrays
 
@@ -206,8 +216,6 @@ void loop(){
   readDseAlarms();//LEYENDO LAS LOS REGISTROS DE ALARMAS DE LOS DSE
   computeDseAlarms();//SEPARANDO LAS ALARMAS QUE VIENEN EN EL MISMO REGISTRO
 
-  test();//FUNCION PARA REALIZAR PRUEBAS
-
   //TIMER DE RECONEXION
   if(dseReconnect.run()){
     for(int i=0; i<NUMBER_OF_DSE; i++){
@@ -218,7 +226,18 @@ void loop(){
 
   //TIMER DE ACTUALIZACION DE FECHA DE LOS MODULOS
   if(updateDateEvent.run()){
-    //activar coil de update date
+    updateModulesDates = true;
+  }
+  if(updateModulesDates && !updatingDate){
+    Serial.println(F("> Actualizando fechas de los modulos"));
+    updatingDate = true;
+    updateDateLastTime = millis();
+  }
+
+  if(updatingDate && (millis() > (updateDateLastTime + 1000))){
+    updateModulesDates = false;
+    updatingDate =false;
+    Serial.println(F("> Fecha de modulos actualizadas"));
   }
 
   if(rtcUpdate.run()){
@@ -226,10 +245,10 @@ void loop(){
   }
 
   //ACTUALIZANDO LOS REGISTROS MODBUS
-  updateDiscreteInputs();
-  updateCoils();
-  updateInputRegisters();
-  updateHoldingRegisters();
+  writeModbusCoils();
+  writeModbusDiscreteInputs();
+  writeModbusInputRegisters();
+  writeModbusHoldingRegisters();
 
   /////////////////////////////
   //UTILIDADES

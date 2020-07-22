@@ -1,5 +1,5 @@
 void initializeArrays(){
-  if(debug){Serial.println("Arrays Initialized");}
+  if(debug){Serial.println(F("> Arrays inicializados"));}
     for(int i=0;i<NUMBER_OF_DSE;i++){
       for(int j=0;j<150;j++){
         dseAlarms[i][j]=0;
@@ -15,6 +15,25 @@ void initializeArrays(){
     }
 }
 
+void connectModules(){
+  for(int d=0;d<NUMBER_OF_DSE;d++){
+    if (!modbusTCPClient[d].connected()) {// client not connected, start the Modbus TCP client
+      if(debug){
+        Serial.print(F("> Intentando conectar al servidor Modbus con IP:"));
+        Serial.println(servers[d]);
+      }
+
+      if (!modbusTCPClient[d].begin(servers[d])) {
+        if(debug){Serial.print(F("> Fallo al conectar, intentando otra vez en "));Serial.print(MODBUS_RECONNECT_TIME/1000);Serial.println(" segundos");}
+        dseErrorComm[d]=true;//SI NO SE LOGRA LA CONEXION SE ACTIVA EL ERROR DE CONEXION DEL DSE ACTUAL
+      } else {
+        if(debug){Serial.println(F("> Conectado a servidor Modbus"));}
+        dseErrorComm[d]=false;//SI SE LOGRA LA CONEXION SE BORRA EL ERROR DE CONEXION DEL DSE ACTUAL
+      }
+    }
+  }
+}
+
 void handleModbusClients(){//funcion que maneja la conexion de los clientes
   EthernetClient newClient = server.accept(); //listen for incoming clients
   if (newClient) { //process new connection if possible
@@ -23,7 +42,7 @@ void handleModbusClients(){//funcion que maneja la conexion de los clientes
       clients[i] = newClient;
       client_cnt++;
       if(debug){
-        Serial.print("Client Accept:"); //a new client connected
+        Serial.print(F("> Cliente Modbus conectado: ")); //a new client connected
         Serial.print(newClient.remoteIP());
         Serial.print(" , Total:");
         Serial.println(client_cnt);
@@ -37,33 +56,18 @@ void handleModbusClients(){//funcion que maneja la conexion de los clientes
     if (clients[i].available()) { //if data is available
       modbusTCPServer.accept(clients[i]); //accept that data
       modbusTCPServer.poll();// service any Modbus TCP requests, while client connected
-      }
+      readModbusCoils();
+      readModbusHoldingRegisters();
+    }
   }
   for (byte i = 0; i < NUMBER_OF_MODBUS_CLIENTS; i++) { // Stop any clients which are disconnected
     if (clients[i] && !clients[i].connected()) {
+      Serial.print(F("> Cliente Modbus desconectado: "));
+      Serial.print(clients[i].remoteIP());
+      Serial.print(F(", Total: "));
       clients[i].stop();
       client_cnt--;
-      Serial.print("Client Stopped, Total: ");
       Serial.println(client_cnt);
-    }
-  }
-}
-
-void connectModules(){
-  for(int d=0;d<NUMBER_OF_DSE;d++){
-    if (!modbusTCPClient[d].connected()) {// client not connected, start the Modbus TCP client
-      if(debug){
-        Serial.print("Attempting to connect to Modbus TCP server at IP:");
-        Serial.println(servers[d]);
-      }
-
-      if (!modbusTCPClient[d].begin(servers[d])) {
-        if(debug){Serial.print("Modbus TCP Client failed to connect!\nTrying again in ");Serial.print(MODBUS_RECONNECT_TIME);Serial.println(" seconds");}
-        dseErrorComm[d]=true;//SI NO SE LOGRA LA CONEXION SE ACTIVA EL ERROR DE CONEXION DEL DSE ACTUAL
-      } else {
-        if(debug){Serial.println("Modbus TCP Client connected");}
-        dseErrorComm[d]=false;//SI SE LOGRA LA CONEXION SE BORRA EL ERROR DE CONEXION DEL DSE ACTUAL
-      }
     }
   }
 }
@@ -78,15 +82,15 @@ void readDseAlarms(){//esta funcion lee los registros de alarma de los DSE
 
     if (!modbusTCPClient[d].connected()) {// client not connected, start the Modbus TCP client
       if(debug){
-        Serial.print("Attempting to connect to Modbus TCP server at IP:");
+        Serial.print(F("> Intentando conectar al servidor Modbus con IP:"));
         Serial.println(servers[d]);
       }
 
       if (!modbusTCPClient[d].begin(servers[d])) {
-        if(debug){Serial.print("Modbus TCP Client failed to connect!\nTrying again in ");Serial.print(MODBUS_RECONNECT_TIME);Serial.println(" seconds");}
+        if(debug){Serial.print(F("> Fallo al conectar, intentando otra vez en "));Serial.print(MODBUS_RECONNECT_TIME/1000);Serial.println(" segundos");}
         dseErrorComm[d]=true;//SI NO SE LOGRA LA CONEXION SE ACTIVA EL ERROR DE CONEXION DEL DSE ACTUAL
       } else {
-        if(debug){Serial.println("Modbus TCP Client connected");}
+        if(debug){Serial.println(F("> Conectado a servidor Modbus"));}
         dseErrorComm[d]=false;//SI SE LOGRA LA CONEXION SE BORRA EL ERROR DE CONEXION DEL DSE ACTUAL
       }
     } else {
@@ -123,10 +127,9 @@ void computeDseAlarms(){
   }
 }
 
-void updateCoils(){
-  modbusTCPServer.coilWrite(0,updateModulesDates);
+void readModbusCoils(){
+  updateModulesDates = modbusTCPServer.coilRead(0);
 
-  modbusTCPServer.coilWrite(10,busLive);
   gen1Breaker = modbusTCPServer.coilRead(11);
   gen2Breaker = modbusTCPServer.coilRead(12);
   gen3Breaker = modbusTCPServer.coilRead(13);
@@ -136,7 +139,6 @@ void updateCoils(){
   master3BusAvailable = modbusTCPServer.coilRead(17);
   master4BusAvailable = modbusTCPServer.coilRead(18);
 
-  modbusTCPServer.coilWrite(20,generalCommonAlarm);
   gen1CommonAlarm = modbusTCPServer.coilRead(21);
   gen2CommonAlarm = modbusTCPServer.coilRead(22);
   gen3CommonAlarm = modbusTCPServer.coilRead(23);
@@ -147,7 +149,13 @@ void updateCoils(){
   master4CommonAlarm = modbusTCPServer.coilRead(28);
 }
 
-void updateDiscreteInputs() {
+void writeModbusCoils(){
+  modbusTCPServer.coilWrite(0,updateModulesDates);
+  modbusTCPServer.coilWrite(10,busLive);
+  modbusTCPServer.coilWrite(20,generalCommonAlarm);
+}
+
+void writeModbusDiscreteInputs() {
   for(int i=0;i<NUMBER_OF_DSE;i++){
     for(int j=0;j<150;j++){
       modbusTCPServer.discreteInputWrite((i*150)+j,dseAlarms[i][j]);
@@ -155,7 +163,7 @@ void updateDiscreteInputs() {
   }
 }
 
-void updateInputRegisters() {
+void writeModbusInputRegisters() {
   for (int i=0;i<NUMBER_OF_DSE;i++){
     for(int j=0;j<37;j++){
       modbusTCPServer.inputRegisterWrite((i*37)+j,dseIR[i][j]);
@@ -163,7 +171,11 @@ void updateInputRegisters() {
   }
 }
 
-void updateHoldingRegisters(){
+void readModbusHoldingRegisters(){
+
+}
+
+void writeModbusHoldingRegisters(){
 }
 
 void utilidades(){
@@ -205,26 +217,29 @@ void readModuleDate(){
       if(modbusTCPClient[0].available()){
         unsigned long time = modbusTCPClient[0].read() << 16 | modbusTCPClient[0].read();
         rtc.setEpoch(time);
-        Serial.print("Updating RTC -> ");
-        Serial.print(getTime());
-        Serial.print("  ");
+        rtcUpdate.setFrecuency(UPDATE_DATE_PERIOD);
+        Serial.print(F("> Actualizando RTC\n\t"));
+        Serial.println(getTime());
+        Serial.print("\t");
         Serial.println(getDate());
       }
     }
   } else {
-    Serial.println("Error trying to get date and time");
+    Serial.println(F("> Error al actualizar RTC. Intentando nuevamente en 10 segundos"));
   }
 }
 
-String twoDigits(long d){
+String twoDigits(long d){//funcion que muestra los numeros siempre con dos digitos
   if(d<10){
     return "0" + String(d);
   }
   return String(d);
 }
-String getTime(){
+
+String getTime(){//funcion que imprime la hora por serial
   return "Time: " + twoDigits(rtc.getHours()) + ":" + twoDigits(rtc.getMinutes()) + ":" + twoDigits(rtc.getSeconds());
 }
-String getDate(){
+
+String getDate(){//funcion que imprime la fecha por serial
   return "Date: " + twoDigits(rtc.getDay()) + "/" + twoDigits(rtc.getMonth()) + "/" + twoDigits(rtc.getYear());
 }
