@@ -47,7 +47,7 @@ unsigned long frame=0;
 unsigned long beforeFrame = 0;
 TimeEvent frameEvent = TimeEvent(1000);
 bool debug = true;
-bool debugUtilidades = false;
+bool debugUtilidades = true;
 
 RTCZero rtc;//RTC
 
@@ -126,6 +126,37 @@ ModbusTCPServer modbusTCPServer;
 EthernetClient clients[NUMBER_OF_MODBUS_CLIENTS];
 int client_cnt=0;//VARIABLE QUE GUARDA EL NUMERO DE CLIENTES CONECTADOS
 
+//////////////////////////////////////////////////////
+//SCHEDULE
+//macros para tipo de repeticion del schedule ( diario, mensual, semanal, o en fecha especifica)
+#define SCH_DAILY 0
+#define SCH_WEEKLY 1
+#define SCH_MONTHLY 2
+#define SCH_DATE 3
+//macros de modos
+#define SCH_TEST_OFF_LOAD false
+#define SCH_TEST_ON_LOAD true
+#define SCH_TRANSITION_OPEN false
+#define SCH_TRANSITION_CLOSED true
+
+byte schTipoRepeticion = SCH_DATE;
+bool schEnable = false;//activa el schedule
+bool schActive = false;//se activa cuando se llega a la fecha y hora establecido en el sch
+bool schDaysWeek[7] = {0,0,0,0,0,0,0};//dias de las semanas en que se activa el schedule
+
+bool schTestLoad = SCH_TEST_OFF_LOAD;
+bool schTransition = SCH_TRANSITION_OPEN;
+bool schLoadDemandInhibit = false;
+
+unsigned int schHour = 0;
+unsigned int schMinute = 0;
+unsigned int schDay = 1;
+unsigned int schMonth = 1;
+unsigned int schDuration = 1;
+
+bool schCoils[18] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+unsigned int schHolding[5]={0,0,0,0,0};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////SETUP////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -179,13 +210,13 @@ void setup(){
   Serial.println(F("> Iniciando servidor Modbus"));
   server.begin();
   if(!modbusTCPServer.begin() && debug){
-    Serial.print(F("> Fallo al iniciar servidor Modbus, IP: "));
-    Serial.println(ip);
+    Serial.println(F("> Fallo al iniciar servidor Modbus"));
     //ACTIVAR LED DE ERROR
     while(1);
   }else{
     if(debug){
-      Serial.println(F("> Servidor Modbus iniciado"));
+      Serial.print(F("> Servidor Modbus iniciado, IP: "));
+      Serial.println(ip);
     }
   }
   //////////////////////////////////////////////////////
@@ -193,7 +224,7 @@ void setup(){
   modbusTCPServer.configureDiscreteInputs(0x00,NUMBER_OF_DSE*150);
   modbusTCPServer.configureCoils(0x00,100);
   modbusTCPServer.configureInputRegisters(0x00,NUMBER_OF_DSE*37);
-  modbusTCPServer.configureHoldingRegisters(0x00,10);
+  modbusTCPServer.configureHoldingRegisters(0x00,100);
   Serial.println(F("> Registros Modbus configurados"));
 
   initializeArrays();//inicializando los arrays

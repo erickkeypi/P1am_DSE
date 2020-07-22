@@ -147,12 +147,19 @@ void readModbusCoils(){
   master2CommonAlarm = modbusTCPServer.coilRead(26);
   master3CommonAlarm = modbusTCPServer.coilRead(27);
   master4CommonAlarm = modbusTCPServer.coilRead(28);
+
+  //leyendo los coils del schedule
+  for(int i=0; i<18;i++){
+    schCoils[i] = modbusTCPServer.coilRead(i+30);
+  }
 }
 
 void writeModbusCoils(){
   modbusTCPServer.coilWrite(0,updateModulesDates);
   modbusTCPServer.coilWrite(10,busLive);
   modbusTCPServer.coilWrite(20,generalCommonAlarm);
+  //sch
+  void writeSchCoils();
 }
 
 void writeModbusDiscreteInputs() {
@@ -172,7 +179,10 @@ void writeModbusInputRegisters() {
 }
 
 void readModbusHoldingRegisters(){
-
+  //sch
+  for(int i=0;i<5;i++){
+    schHolding[i]= modbusTCPServer.holdingRegisterRead(i+10);
+  }
 }
 
 void writeModbusHoldingRegisters(){
@@ -193,8 +203,19 @@ void utilidades(){
       Serial.print(dseErrorComm[i]);
       Serial.print(" ");
     }
+    Serial.print("Schedule coils: ");
+    for(int i=0; i<18;i++){
+      Serial.print(schCoils[i]);
+      Serial.print(" ");
+    }
     Serial.println();
+    Serial.print("Schedule holding: ");
+    for(int i=0; i<5;i++){
+      Serial.print(schHolding[i]);
+      Serial.print(" ");
+    }
   }
+  Serial.println();
 }
 
 void test(){
@@ -242,4 +263,8 @@ String getTime(){//funcion que imprime la hora por serial
 
 String getDate(){//funcion que imprime la fecha por serial
   return "Date: " + twoDigits(rtc.getDay()) + "/" + twoDigits(rtc.getMonth()) + "/" + twoDigits(rtc.getYear());
+}
+
+void writeSchCoils(){
+
 }
