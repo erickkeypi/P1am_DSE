@@ -127,103 +127,45 @@ void computeDseAlarms(){
   }
 }
 
-void readModbusCoils(){
-  updateModulesDates = modbusTCPServer.coilRead(0);
-
-  gen1Breaker = modbusTCPServer.coilRead(11);
-  gen2Breaker = modbusTCPServer.coilRead(12);
-  gen3Breaker = modbusTCPServer.coilRead(13);
-  gen4Breaker = modbusTCPServer.coilRead(14);
-  master1BusAvailable = modbusTCPServer.coilRead(15);
-  master2BusAvailable = modbusTCPServer.coilRead(16);
-  master3BusAvailable = modbusTCPServer.coilRead(17);
-  master4BusAvailable = modbusTCPServer.coilRead(18);
-
-  gen1CommonAlarm = modbusTCPServer.coilRead(21);
-  gen2CommonAlarm = modbusTCPServer.coilRead(22);
-  gen3CommonAlarm = modbusTCPServer.coilRead(23);
-  gen4CommonAlarm = modbusTCPServer.coilRead(24);
-  master1CommonAlarm = modbusTCPServer.coilRead(25);
-  master2CommonAlarm = modbusTCPServer.coilRead(26);
-  master3CommonAlarm = modbusTCPServer.coilRead(27);
-  master4CommonAlarm = modbusTCPServer.coilRead(28);
-
-  //leyendo los coils del schedule
-  for(int i=0; i<18;i++){
-    schCoils[i] = modbusTCPServer.coilRead(i+30);
-  }
-}
-
-void writeModbusCoils(){
-  modbusTCPServer.coilWrite(0,updateModulesDates);
-  modbusTCPServer.coilWrite(10,busLive);
-  modbusTCPServer.coilWrite(20,generalCommonAlarm);
-  //escribiendo registros del schedule
-  for(int i=0; i<18;i++){
-    modbusTCPServer.coilWrite(i+30,schCoils[i]);
-  }
-}
-
-void writeModbusDiscreteInputs() {
-  for(int i=0;i<NUMBER_OF_DSE;i++){
-    for(int j=0;j<150;j++){
-      modbusTCPServer.discreteInputWrite((i*150)+j,dseAlarms[i][j]);
-    }
-  }
-}
-
-void writeModbusInputRegisters() {
-  for (int i=0;i<NUMBER_OF_DSE;i++){
-    for(int j=0;j<37;j++){
-      modbusTCPServer.inputRegisterWrite((i*37)+j,dseIR[i][j]);
-    }
-  }
-}
-
-void readModbusHoldingRegisters(){
-  //leyendo registros del schedule
-  for(int i=0;i<5;i++){
-    schHolding[i]= modbusTCPServer.holdingRegisterRead(i+10);
-  }
-}
-
-void writeModbusHoldingRegisters(){
-  //escribiendo registros del schedule
-  for(int i=0;i<5;i++){
-    modbusTCPServer.holdingRegisterWrite(i+10,schHolding[i]);
-  }
-}
-
 void utilidades(){
   //updating frame
   frame = micros() - beforeFrame;
   beforeFrame = micros();
   //printing frame time and memory usage
   if(frameEvent.run() && debugUtilidades){
-    Serial.print("Frame: ");
+    Serial.print("> Frame time(us): ");
     Serial.println(frame);
-    Serial.print(F("MEM FREE: "));
-    Serial.println(freeMemory(), DEC);
-    Serial.print("DSE Errors: ");
+    printMemory();
+    Serial.print("> DSE comm error: ");
     for(int i=0; i<NUMBER_OF_DSE;i++){
       Serial.print(dseErrorComm[i]);
       Serial.print(" ");
     }
-    Serial.print("Schedule coils: ");
-    for(int i=0; i<18;i++){
-      Serial.print(schCoils[i]);
-      Serial.print(" ");
-    }
-    Serial.println();
-    Serial.print("Schedule holding: ");
-    for(int i=0; i<5;i++){
-      Serial.print(schHolding[i]);
-      Serial.print(" ");
-    }
-    Serial.println();
+    // Serial.print("Schedule coils: ");
+    // for(int i=0; i<18;i++){
+    //   Serial.print(schCoils[i]);
+    //   Serial.print(" ");
+    // }
+    // Serial.println();
+    // Serial.print("Schedule holding: ");
+    // for(int i=0; i<5;i++){
+    //   Serial.print(schHolding[i]);
+    //   Serial.print(" ");
+    // }
+    Serial.println("\n");
 
   }
 
+}
+
+void printMemory(){
+  Serial.print(F("> MEM FREE: "));
+  Serial.print(freeMemory(), DEC);
+  Serial.print(", ");
+  float percent = freeMemory();
+  percent = percent*100/32000;
+  Serial.print(percent,2);
+  Serial.println("%");
 }
 
 void test(){
@@ -428,31 +370,127 @@ void computeSchRegisters(){
   }
 
   //computando si se activa el schedule
+  if(schDuration == 0){
+    schDurationTimer.setFrecuency(2000);
+  }else{
+    schDurationTimer.setFrecuency(schDuration*60*1000);
+  }
   switch(schTipoRepeticion){
 
     case SCH_DAILY://en repeticion diaria solo se comprueba la hora y los minutos
-    if(schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute){
+    if(!schActive && schEnable && (rtc.getHours() == schHour) && (rtc.getMinutes() == schMinute) && (rtc.getSeconds() == 0)){
       schActive = true;
+      schDurationTimer.start();
+      Serial.print(F("> Schedule activado. Duracion: "));
+      Serial.print(schDuration);
+      Serial.println(F(" minutos"));
     }
     break;
 
     case SCH_WEEKLY:
-
+    if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0){
+      //0 jueves, 1 viernes, 2 sabado, 3 domingo, 4 lunes, 5 martes, 6 miercoles
+      //rtc.getEpoch();
+      unsigned long dayOfWeek= (rtc.getEpoch() / 86400) % 7;
+      //calculando se el dia corresponde a alguno de los elegidos
+      bool diaActivo = (schCoils[0] && dayOfWeek == 4) || (schCoils[1] && dayOfWeek == 5) || (schCoils[2] && dayOfWeek == 6) || (schCoils[3] && dayOfWeek == 0) || (schCoils[4] && dayOfWeek == 1) || (schCoils[5] && dayOfWeek == 2) || (schCoils[6] && dayOfWeek == 3);
+      if(diaActivo){
+        schActive = true;
+        schDurationTimer.start();
+        Serial.println(F("Schedule activado"));
+      }
+    }
     break;
 
     case SCH_MONTHLY:
-    if(schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getDay() == schDay){
+    if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0 && rtc.getDay() == schDay){
       schActive = true;
+      schDurationTimer.start();
+      Serial.println(F("Schedule activado"));
     }
     break;
 
     case SCH_DATE:
-    if(schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getDay() == schDay && rtc.getMonth() == schMonth){
+    if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0 && rtc.getDay() == schDay && rtc.getMonth() == schMonth){
       schActive = true;
+      schDurationTimer.start();
+      Serial.println(F("Schedule activado"));
     }
     break;
   }
 
   schCoils[8] = schActive;
 
+}
+
+////MODBUS
+void readModbusCoils(){
+  updateModulesDates = modbusTCPServer.coilRead(0);
+
+  gen1Breaker = modbusTCPServer.coilRead(11);
+  gen2Breaker = modbusTCPServer.coilRead(12);
+  gen3Breaker = modbusTCPServer.coilRead(13);
+  gen4Breaker = modbusTCPServer.coilRead(14);
+  master1BusAvailable = modbusTCPServer.coilRead(15);
+  master2BusAvailable = modbusTCPServer.coilRead(16);
+  master3BusAvailable = modbusTCPServer.coilRead(17);
+  master4BusAvailable = modbusTCPServer.coilRead(18);
+
+  gen1CommonAlarm = modbusTCPServer.coilRead(21);
+  gen2CommonAlarm = modbusTCPServer.coilRead(22);
+  gen3CommonAlarm = modbusTCPServer.coilRead(23);
+  gen4CommonAlarm = modbusTCPServer.coilRead(24);
+  master1CommonAlarm = modbusTCPServer.coilRead(25);
+  master2CommonAlarm = modbusTCPServer.coilRead(26);
+  master3CommonAlarm = modbusTCPServer.coilRead(27);
+  master4CommonAlarm = modbusTCPServer.coilRead(28);
+
+  //leyendo los coils del schedule
+  for(int i=0; i<18;i++){
+    schCoils[i] = modbusTCPServer.coilRead(i+30);
+  }
+}
+
+void writeModbusCoils(){
+  modbusTCPServer.coilWrite(0,updateModulesDates);
+  modbusTCPServer.coilWrite(10,busLive);
+  modbusTCPServer.coilWrite(20,generalCommonAlarm);
+  //escribiendo registros del schedule
+  for(int i=0; i<18;i++){
+    modbusTCPServer.coilWrite(i+30,schCoils[i]);
+  }
+  //ESCRIBIENDO LOS ERRORES DE COMUNICACION
+  for(int i=0;i<NUMBER_OF_DSE;i++){
+    modbusTCPServer.coilWrite(i+50,dseErrorComm[i]);
+  }
+}
+
+void writeModbusDiscreteInputs() {
+  for(int i=0;i<NUMBER_OF_DSE;i++){
+    for(int j=0;j<150;j++){
+      modbusTCPServer.discreteInputWrite((i*150)+j,dseAlarms[i][j]);
+    }
+  }
+}
+
+void writeModbusInputRegisters() {
+  for (int i=0;i<NUMBER_OF_DSE;i++){
+    for(int j=0;j<37;j++){
+      modbusTCPServer.inputRegisterWrite((i*37)+j,dseIR[i][j]);
+    }
+  }
+}
+
+void readModbusHoldingRegisters(){
+  //leyendo registros del schedule
+  for(int i=0;i<5;i++){
+    schHolding[i]= modbusTCPServer.holdingRegisterRead(i+10);
+  }
+}
+
+void writeModbusHoldingRegisters(){
+  //escribiendo registros del schedule
+  for(int i=0;i<5;i++){
+    modbusTCPServer.holdingRegisterWrite(i+10,schHolding[i]);
+  }
 }

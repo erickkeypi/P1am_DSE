@@ -12,10 +12,8 @@
 */
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-//HACER SCHEDULE
 //HACER LOG DE ERRORES EN SD
 //HACER LED DE ERROR Y LED DE WARNING
-//HACER UN ESTADO EN EL QUE ESTA ACTIVO UN ERROR Y NO EJECUTAR MODBUS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -29,13 +27,14 @@
 #include <Ethernet.h>
 #include <RTCZero.h>
 #include <MemoryFree.h>
+#include <KontrolMin.h>
 
 //////////////////////////////////////////////////////
 //MACROS
-#define NUMBER_OF_DSE 2//SI SON MAS DE 8 MODULOS SE DEBE CONFIGURAR LOS OBJETOS DE EthernetClient y ModbusTCPClient de la lineas 95 y 96
+#define NUMBER_OF_DSE 2//SI SON MAS DE 8 MODULOS SE DEBE CONFIGURAR LOS OBJETOs DE EthernetClient y ModbusTCPClient
 #define NUMBER_OF_MODBUS_CLIENTS 8  //CANTIDAD DE CLIENTES QUE PUEDEN CONETARSE POR MODBUS
 #define MODBUS_TIMEOUT 200
-#define MODBUS_RECONNECT_TIME 30000
+#define MODBUS_RECONNECT_TIME 60000
 #define UPDATE_DATE_PERIOD 1296000000 //LA FECHA DE LOS DSE SE ACTUALIZAN CADA 15 DIAS
 #define RTC_UPDATE_TIME 300000 // se actualiza el rtc cada 5 minutos
 
@@ -47,8 +46,9 @@ unsigned long frame=0;
 unsigned long beforeFrame = 0;
 TimeEvent frameEvent = TimeEvent(1000);
 bool debug = true;
-bool debugUtilidades = true;
+bool debugUtilidades = false;
 
+KontrolMin kontrol = KontrolMin();//KONTROL
 RTCZero rtc;//RTC
 
 //////////////////////////////////////////////////////
@@ -114,9 +114,14 @@ ModbusTCPClient modbusTCPClient[8]={
 };
 //IPs DE LOS MODULOS DSE
 //AGREGAR TANTAS IPs COMO MODULOS DSE
-IPAddress servers[NUMBER_OF_DSE]={
+IPAddress servers[8]={
   IPAddress(192, 168, 137,  126),
-  IPAddress(192, 168, 137,  128)
+  IPAddress(192, 168, 137,  128),
+  IPAddress(192, 168, 137,  121),
+  IPAddress(192, 168, 137,  122),
+  IPAddress(192, 168, 137,  123),
+  IPAddress(192, 168, 137,  124),
+  IPAddress(192, 168, 137,  125)
 };
 
 //////////////////////////////////////////////////////
@@ -158,7 +163,6 @@ bool schCoils[18] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 unsigned int schHolding[5]={0,0,0,0,0};
 
 TimeEvent schDurationTimer = TimeEvent(5000);
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////SETUP////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -249,6 +253,16 @@ void loop(){
   readDseAlarms();//LEYENDO LAS LOS REGISTROS DE ALARMAS DE LOS DSE
   computeDseAlarms();//SEPARANDO LAS ALARMAS QUE VIENEN EN EL MISMO REGISTRO
 
+  //KONTROL
+  if(Serial.available()>0){
+    kontrol.update(Serial.read());
+  }
+  kontrol.addListener(F("help"),helpCall);
+  kontrol.addListener(F("updateDate"),updateDateCallback);
+  kontrol.addListener(F("debug"),debugCallback);
+  kontrol.addListener(F("connectModules"),connectModules);
+  kontrol.addListener(F("printMemory"),printMemory);
+
   //TIMER DE RECONEXION
   if(dseReconnect.run()){
     for(int i=0; i<NUMBER_OF_DSE; i++){
@@ -263,6 +277,7 @@ void loop(){
   }
   if(updateModulesDates && !updatingDate){
     Serial.println(F("> Actualizando fechas de los modulos"));
+    readModuleDate();
     updatingDate = true;
     updateDateLastTime = millis();
   }
@@ -276,8 +291,13 @@ void loop(){
   if(rtcUpdate.run()){
     readModuleDate();
   }
-  schActive =false;
+
   computeSchRegisters();
+  if(schDurationTimer.run()){
+    schActive = false;
+    schDurationTimer.stop();
+    Serial.println(F("> Schedule desactivado"));
+  }
 
   //ACTUALIZANDO LOS REGISTROS MODBUS
   writeModbusCoils();
@@ -285,7 +305,10 @@ void loop(){
   writeModbusInputRegisters();
   writeModbusHoldingRegisters();
 
+
+
   /////////////////////////////
   //UTILIDADES
   utilidades();
+
 }//FIN LOOP
