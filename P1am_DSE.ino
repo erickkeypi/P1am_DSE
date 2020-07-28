@@ -83,20 +83,22 @@ char nombres[8][12] = {//LOS NOMBRES NO PUEDEN TENER MAS DE 11 CARACTERES
   "No Connect"
 };
 
-bool dseInputs[NUMBER_OF_DSE][10];
+bool dseInputs[8][10];
+unsigned int masterScreen[60];
+unsigned int masterActual = 0;
+//
+// bool masterXMainAvailable = false;
+// bool masterXBusAvailable = false;
+// bool masterXLoadOn = false;
+// bool masterXMainBrk = false;
+// bool masterXBusBrk = false;
+// unsigned int masterXLLAVR = 0;
+
 
 
 //////////////////////////////////////////////////////
 //VARIABLES PARA DETERMINAR SI EL BUS ESTA CALIENTE
 bool busLive = false;
-bool gen1Breaker = false;
-bool gen2Breaker = false;
-bool gen3Breaker = false;
-bool gen4Breaker = false;
-bool master1BusAvailable = false;
-bool master2BusAvailable = false;
-bool master3BusAvailable = false;
-bool master4BusAvailable = false;
 
 //////////////////////////////////////////////////////
 //VARIABLES PARA DETERMINAR LA ALARMA COMUN GENERAL
@@ -261,7 +263,8 @@ void setup(){
 void loop(){
 
   //LOGICA PARA BUS LIVE Y LA ALARMA COMUN GENERAL
-  busLive = gen1Breaker || gen2Breaker || gen3Breaker || gen4Breaker || master1BusAvailable || master2BusAvailable || master3BusAvailable || master4BusAvailable;
+  //para los master se toma dseInputs[d][1] y para los gen dseInputs[d][2]
+  busLive = dseInputs[0][1] || dseInputs[1][2] || dseInputs[2][1] || dseInputs[3][1] || dseInputs[4][1] || dseInputs[5][2] || dseInputs[6][2] || dseInputs[7][2];
   generalCommonAlarm = gen1CommonAlarm || gen2CommonAlarm || gen3CommonAlarm || gen4CommonAlarm || master1CommonAlarm || master2CommonAlarm || master3CommonAlarm || master4CommonAlarm;
 
   handleModbusClients();//MANEJANDO LOS CLIENTES

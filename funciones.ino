@@ -140,12 +140,82 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
       for(int j=0;j<6;j++){//LEYENDO EL NOMBRE
         variablesPrincipales[d][9+(j)] = nombres[d][j*2]<<8 | nombres[d][(j*2)+1];
       }
-
-      //leyendo breaker y disponibilidad
-
-
     }
   }
+
+  //master screen
+  if(dseErrorComm[masterActual]){//SI HAY UN ERROR DE CONEXION
+    for(int i=0;i<60;i++){//borrando los valores
+      masterScreen[i]=0;
+    }
+    masterScreen[52] = 'N'<<8 | 'o';
+    masterScreen[53] = ' '<<8 | 'C';
+    masterScreen[54] = 'o'<<8 | 'n';
+    masterScreen[55] = 'e'<<8 | 'c';
+    masterScreen[56] = 't'<<8 | 'a';
+    masterScreen[57] = 'd'<<8 | 'o';
+  }else{
+    masterScreen[0] = dseInputs[masterActual][0];//mains available
+    masterScreen[1] = dseInputs[masterActual][1];//bus available
+    masterScreen[2] = dseInputs[masterActual][2];//mains brk
+    masterScreen[3] = dseInputs[masterActual][3];//bus brk
+    masterScreen[4] = dseInputs[masterActual][4];//load on
+    masterScreen[5] = modbusTCPClient[masterActual].holdingRegisterRead(1699);//maisn l-l avr
+    masterScreen[6] = modbusTCPClient[masterActual].holdingRegisterRead(1698);//maisn l-l avr
+    masterScreen[7] = variablesPrincipales[masterActual][0];//mains hz
+    masterScreen[8] = variablesPrincipales[masterActual][3];//mains kw
+    masterScreen[9] = variablesPrincipales[masterActual][4];//mains kw
+    masterScreen[10] = variablesPrincipales[masterActual][5];//mains %
+    masterScreen[11] = modbusTCPClient[masterActual].holdingRegisterRead(1715);//bus l-l avr
+    masterScreen[12] = modbusTCPClient[masterActual].holdingRegisterRead(1714);//bus l-l avr
+    masterScreen[13] = modbusTCPClient[masterActual].holdingRegisterRead(1091);//bus freq
+    masterScreen[14] = modbusTCPClient[masterActual].holdingRegisterRead(1606);//bus %
+    masterScreen[15] = modbusTCPClient[masterActual].holdingRegisterRead(1061);//mains l1-n
+    masterScreen[16] = modbusTCPClient[masterActual].holdingRegisterRead(1060);//mains l1-n
+    masterScreen[17] = modbusTCPClient[masterActual].holdingRegisterRead(1063);//mains l2-n
+    masterScreen[18] = modbusTCPClient[masterActual].holdingRegisterRead(1062);//mains l2-n
+    masterScreen[19] = modbusTCPClient[masterActual].holdingRegisterRead(1065);//mains l3-n
+    masterScreen[20] = modbusTCPClient[masterActual].holdingRegisterRead(1064);//mains l3-n
+    masterScreen[21] = modbusTCPClient[masterActual].holdingRegisterRead(1067);//mains l1-l2
+    masterScreen[22] = modbusTCPClient[masterActual].holdingRegisterRead(1066);//mains l1-l2
+    masterScreen[23] = modbusTCPClient[masterActual].holdingRegisterRead(1069);//mains l2-l3
+    masterScreen[24] = modbusTCPClient[masterActual].holdingRegisterRead(1068);//mains l2-l3
+    masterScreen[25] = modbusTCPClient[masterActual].holdingRegisterRead(1071);//mains l3-l4
+    masterScreen[26] = modbusTCPClient[masterActual].holdingRegisterRead(1070);//mains l3-l4
+    masterScreen[27] = modbusTCPClient[masterActual].holdingRegisterRead(1077);//current l1
+    masterScreen[28] = modbusTCPClient[masterActual].holdingRegisterRead(1076);//current l1
+    masterScreen[29] = modbusTCPClient[masterActual].holdingRegisterRead(1079);//current l2
+    masterScreen[30] = modbusTCPClient[masterActual].holdingRegisterRead(1078);//current l2
+    masterScreen[31] = modbusTCPClient[masterActual].holdingRegisterRead(1081);//current l3
+    masterScreen[32] = modbusTCPClient[masterActual].holdingRegisterRead(1080);//current l3
+    masterScreen[33] = modbusTCPClient[masterActual].holdingRegisterRead(1093);//bus l1-n
+    masterScreen[34] = modbusTCPClient[masterActual].holdingRegisterRead(1092);//bus l1-n
+    masterScreen[35] = modbusTCPClient[masterActual].holdingRegisterRead(1095);//bus l2-n
+    masterScreen[36] = modbusTCPClient[masterActual].holdingRegisterRead(1094);//bus l2-n
+    masterScreen[37] = modbusTCPClient[masterActual].holdingRegisterRead(1097);//bus l3-n
+    masterScreen[38] = modbusTCPClient[masterActual].holdingRegisterRead(1096);//bus l3-n
+    masterScreen[39] = modbusTCPClient[masterActual].holdingRegisterRead(1099);//bus l1-l2
+    masterScreen[40] = modbusTCPClient[masterActual].holdingRegisterRead(1098);//bus l1-l2
+    masterScreen[41] = modbusTCPClient[masterActual].holdingRegisterRead(1101);//bus l2-l3
+    masterScreen[42] = modbusTCPClient[masterActual].holdingRegisterRead(1100);//bus l2-l3
+    masterScreen[43] = modbusTCPClient[masterActual].holdingRegisterRead(1103);//bus l3-l1
+    masterScreen[44] = modbusTCPClient[masterActual].holdingRegisterRead(1102);//bus l3-l1
+    masterScreen[45] = modbusTCPClient[masterActual].holdingRegisterRead(1581);//pf
+    masterScreen[46] = modbusTCPClient[masterActual].holdingRegisterRead(1569);//mains kva
+    masterScreen[47] = modbusTCPClient[masterActual].holdingRegisterRead(1568);//mains kva
+    masterScreen[48] = modbusTCPClient[masterActual].holdingRegisterRead(1577);//mains KVar
+    masterScreen[49] = modbusTCPClient[masterActual].holdingRegisterRead(1576);//mains kvar
+    masterScreen[50] = modbusTCPClient[masterActual].holdingRegisterRead(1074);//phase rotation
+    masterScreen[51] = variablesPrincipales[masterActual][8];//modo
+
+    for(int j=0;j<6;j++){//LEYENDO EL NOMBRE
+      masterScreen[52+j] = variablesPrincipales[masterActual][9+j];
+    }
+  }
+
+
+
+
 }
 
 void computeDseAlarms(){
@@ -181,16 +251,6 @@ void utilidades(){
       Serial.print(dseErrorComm[i]);
       Serial.print(" ");
     }
-    Serial.println();
-    Serial.print("> DSE coils: ");
-    for(int i=0;i<NUMBER_OF_DSE;i++){
-      for(int j=0; j<5; j++){
-        Serial.print(dseInputs[i][j]);
-        Serial.print(" ");
-      }
-      Serial.println();
-    }
-
     Serial.println();
 
     Serial.println();
@@ -468,15 +528,6 @@ void computeSchRegisters(){
 void readModbusCoils(){
   updateModulesDates = modbusTCPServer.coilRead(0);
 
-  gen1Breaker = modbusTCPServer.coilRead(11);
-  gen2Breaker = modbusTCPServer.coilRead(12);
-  gen3Breaker = modbusTCPServer.coilRead(13);
-  gen4Breaker = modbusTCPServer.coilRead(14);
-  master1BusAvailable = modbusTCPServer.coilRead(15);
-  master2BusAvailable = modbusTCPServer.coilRead(16);
-  master3BusAvailable = modbusTCPServer.coilRead(17);
-  master4BusAvailable = modbusTCPServer.coilRead(18);
-
   gen1CommonAlarm = modbusTCPServer.coilRead(21);
   gen2CommonAlarm = modbusTCPServer.coilRead(22);
   gen3CommonAlarm = modbusTCPServer.coilRead(23);
@@ -540,12 +591,16 @@ void writeModbusHoldingRegisters(){
       modbusTCPServer.holdingRegisterWrite(100+(i*20)+j,variablesPrincipales[i][j]);
     }
   }
-  int a='a';
-  int b ='b';
-  unsigned int letra = a<<8 | b;
 
-  modbusTCPServer.holdingRegisterWrite(0,letra);
-  letra = 'c'<<8 | 'd';
-  modbusTCPServer.holdingRegisterWrite(1,letra);
+  for(int i=0;i<60;i++){//escribiendo los registros para la pantalla de master
+    modbusTCPServer.holdingRegisterWrite(500+i,masterScreen[i]);
+  }
+  // int a='a';
+  // int b ='b';
+  // unsigned int letra = a<<8 | b;
+  //
+  // modbusTCPServer.holdingRegisterWrite(0,letra);
+  // letra = 'c'<<8 | 'd';
+  // modbusTCPServer.holdingRegisterWrite(1,letra);
 
 }
