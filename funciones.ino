@@ -72,7 +72,7 @@ void handleModbusClients(){//funcion que maneja la conexion de los clientes
   }
 }
 
-void readDseAlarms(){//esta funcion lee los registros de alarma de los DSE
+void readDse(){//esta funcion lee los registros de alarma de los DSE
 
   for(int d=0;d<NUMBER_OF_DSE;d++){
     if(dseErrorComm[d]){//SI HAY UN ERROR DE CONEXION CON EL DSE ACTUAL SE SIGUE CON EL SIGUIENTE
@@ -100,10 +100,50 @@ void readDseAlarms(){//esta funcion lee los registros de alarma de los DSE
             dseIR[d][i] = modbusTCPClient[d].read();//COPIANDO LAS ALARMAS EN EL ARRAY CORRESPONDIENTE
           }
         }
-      }else{
+      }
+      else {
         Serial.println(modbusTCPClient[d].lastError());
         dseErrorComm[d]=true;//SE ACTIVA EL ERROR SI SE DETECTA UN ERROR EN LA LECTURA DE LOS REGISTROS
       }
+
+      //LEYENDO VARIABLES PARA LA PANTALLA PRINCIPAL
+      if(d == 0 || (d >= 2 && d <= 4)){//si es master
+        variablesPrincipales[d][0] = modbusTCPClient[d].holdingRegisterRead(1059);//HZ
+        variablesPrincipales[d][1] = modbusTCPClient[d].holdingRegisterRead(1699);//V(1)
+        variablesPrincipales[d][2] = modbusTCPClient[d].holdingRegisterRead(1698);//V(2)
+        variablesPrincipales[d][3] = modbusTCPClient[d].holdingRegisterRead(1561);//KW(1)
+        variablesPrincipales[d][4] = modbusTCPClient[d].holdingRegisterRead(1560);//KW(2)
+        variablesPrincipales[d][5] = modbusTCPClient[d].holdingRegisterRead(1582);//%
+        variablesPrincipales[d][6] = modbusTCPClient[d].holdingRegisterRead(1577);//KVar(1)
+        variablesPrincipales[d][7] = modbusTCPClient[d].holdingRegisterRead(1576);//KVar(2)
+
+        dseInputs[d][0] = modbusTCPClient[d].holdingRegisterRead(48658);//MAINS AVAILABLE
+        dseInputs[d][1] = modbusTCPClient[d].holdingRegisterRead(48661);//BUS AVAILABLE
+        dseInputs[d][2] = modbusTCPClient[d].holdingRegisterRead(48659);//MAIN BRK
+        dseInputs[d][3] = modbusTCPClient[d].holdingRegisterRead(48660);//BUS BRK
+        dseInputs[d][4] = dseInputs[d][2] | dseInputs[d][3];
+
+      } else if(d == 1 || (d > 4)){//si es generador
+        variablesPrincipales[d][0] = modbusTCPClient[d].holdingRegisterRead(1031);//HZ
+        variablesPrincipales[d][1] = modbusTCPClient[d].holdingRegisterRead(1651);//V(1)
+        variablesPrincipales[d][2] = modbusTCPClient[d].holdingRegisterRead(1650);//V(2)
+        variablesPrincipales[d][3] = modbusTCPClient[d].holdingRegisterRead(1537);//KW(1)
+        variablesPrincipales[d][4] = modbusTCPClient[d].holdingRegisterRead(1536);//KW(2)
+        variablesPrincipales[d][5] = modbusTCPClient[d].holdingRegisterRead(1558);//%
+        variablesPrincipales[d][6] = modbusTCPClient[d].holdingRegisterRead(1553);//KVar(1)
+        variablesPrincipales[d][7] = modbusTCPClient[d].holdingRegisterRead(1552);//KVar(2)
+
+        dseInputs[d][1] = modbusTCPClient[d].holdingRegisterRead(48661);//GEN AVAILABLE
+        dseInputs[d][2] = modbusTCPClient[d].holdingRegisterRead(48659);//GEN BRK
+      }
+      variablesPrincipales[d][8] = modbusTCPClient[d].holdingRegisterRead(772);//MODE
+      for(int j=0;j<6;j++){//LEYENDO EL NOMBRE
+        variablesPrincipales[d][9+(j)] = nombres[d][j*2]<<8 | nombres[d][(j*2)+1];
+      }
+
+      //leyendo breaker y disponibilidad
+
+
     }
   }
 }
@@ -141,18 +181,19 @@ void utilidades(){
       Serial.print(dseErrorComm[i]);
       Serial.print(" ");
     }
-    // Serial.print("Schedule coils: ");
-    // for(int i=0; i<18;i++){
-    //   Serial.print(schCoils[i]);
-    //   Serial.print(" ");
-    // }
-    // Serial.println();
-    // Serial.print("Schedule holding: ");
-    // for(int i=0; i<5;i++){
-    //   Serial.print(schHolding[i]);
-    //   Serial.print(" ");
-    // }
-    Serial.println("\n");
+    Serial.println();
+    Serial.print("> DSE coils: ");
+    for(int i=0;i<NUMBER_OF_DSE;i++){
+      for(int j=0; j<5; j++){
+        Serial.print(dseInputs[i][j]);
+        Serial.print(" ");
+      }
+      Serial.println();
+    }
+
+    Serial.println();
+
+    Serial.println();
 
   }
 
@@ -467,8 +508,8 @@ void writeModbusCoils(){
 
 void writeModbusDiscreteInputs() {
   for(int i=0;i<NUMBER_OF_DSE;i++){
-    for(int j=0;j<150;j++){
-      modbusTCPServer.discreteInputWrite((i*150)+j,dseAlarms[i][j]);
+    for(int j=0;j<10;j++){
+      modbusTCPServer.discreteInputWrite((i*10)+j,dseInputs[i][j]);
     }
   }
 }
@@ -493,4 +534,18 @@ void writeModbusHoldingRegisters(){
   for(int i=0;i<5;i++){
     modbusTCPServer.holdingRegisterWrite(i+10,schHolding[i]);
   }
+
+  for(int i=0;i<NUMBER_OF_DSE;i++){
+    for (int j =0;j<20;j++){
+      modbusTCPServer.holdingRegisterWrite(100+(i*20)+j,variablesPrincipales[i][j]);
+    }
+  }
+  int a='a';
+  int b ='b';
+  unsigned int letra = a<<8 | b;
+
+  modbusTCPServer.holdingRegisterWrite(0,letra);
+  letra = 'c'<<8 | 'd';
+  modbusTCPServer.holdingRegisterWrite(1,letra);
+
 }

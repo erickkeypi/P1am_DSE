@@ -20,3 +20,7 @@ void helpCall(){
   Serial.println(F("\t{printMemory} -> Muestra la cantidad de bytes disponibles en la memoria"));
   Serial.println(F("##########"));
 }
+
+void okCallback(){
+  Serial.println(F("> OK"));
+}

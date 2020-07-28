@@ -46,7 +46,7 @@ unsigned long frame=0;
 unsigned long beforeFrame = 0;
 TimeEvent frameEvent = TimeEvent(1000);
 bool debug = true;
-bool debugUtilidades = false;
+bool debugUtilidades = true;
 
 KontrolMin kontrol = KontrolMin();//KONTROL
 RTCZero rtc;//RTC
@@ -71,6 +71,19 @@ TimeEvent rtcUpdate = TimeEvent(10000);//Al principio el RTC trata de actualizar
 int dseIR[NUMBER_OF_DSE][37];//alarmas leidas
 bool dseAlarms[NUMBER_OF_DSE][150];//bits de las alarmas
 bool dseErrorComm[NUMBER_OF_DSE];//error de comunicacion
+unsigned int variablesPrincipales[NUMBER_OF_DSE][20];//array para guardar valores que se presentan en la pantalla principal
+char nombres[8][12] = {//LOS NOMBRES NO PUEDEN TENER MAS DE 11 CARACTERES
+  "Master SBA1",
+  "Gen 1",
+  "No Connect",
+  "No Connect",
+  "No Connect",
+  "No Connect",
+  "No Connect",
+  "No Connect"
+};
+
+bool dseInputs[NUMBER_OF_DSE][10];
 
 
 //////////////////////////////////////////////////////
@@ -115,13 +128,13 @@ ModbusTCPClient modbusTCPClient[8]={
 //IPs DE LOS MODULOS DSE
 //AGREGAR TANTAS IPs COMO MODULOS DSE
 IPAddress servers[8]={
-  IPAddress(192, 168, 137,  126),
-  IPAddress(192, 168, 137,  128),
-  IPAddress(192, 168, 137,  121),
-  IPAddress(192, 168, 137,  122),
-  IPAddress(192, 168, 137,  123),
-  IPAddress(192, 168, 137,  124),
-  IPAddress(192, 168, 137,  125)
+  IPAddress(192, 168, 137,  126),//MASTER1
+  IPAddress(192, 168, 137,  128),//GEN1
+  IPAddress(192, 168, 137,  121),//MASTER2
+  IPAddress(192, 168, 137,  122),//MASTER3
+  IPAddress(192, 168, 137,  123),//MASTER4
+  IPAddress(192, 168, 137,  124),//GEN2
+  IPAddress(192, 168, 137,  125)//GEN3
 };
 
 //////////////////////////////////////////////////////
@@ -147,7 +160,6 @@ int client_cnt=0;//VARIABLE QUE GUARDA EL NUMERO DE CLIENTES CONECTADOS
 byte schTipoRepeticion = SCH_DATE;
 bool schEnable = false;//activa el schedule
 bool schActive = false;//se activa cuando se llega a la fecha y hora establecido en el sch
-bool schDaysWeek[7] = {0,0,0,0,0,0,0};//dias de las semanas en que se activa el schedule
 
 bool schTestLoad = SCH_TEST_OFF_LOAD;
 bool schTransition = SCH_TRANSITION_OPEN;
@@ -163,6 +175,9 @@ bool schCoils[18] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 unsigned int schHolding[5]={0,0,0,0,0};
 
 TimeEvent schDurationTimer = TimeEvent(5000);
+
+
+unsigned int testInt = 0;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////SETUP////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -227,10 +242,10 @@ void setup(){
   }
   //////////////////////////////////////////////////////
   //CONFIGURANDO REGISTROS MODBUS
-  modbusTCPServer.configureDiscreteInputs(0x00,NUMBER_OF_DSE*150);
-  modbusTCPServer.configureCoils(0x00,100);
+  modbusTCPServer.configureDiscreteInputs(0X00,100);
+  modbusTCPServer.configureCoils(0x00,200);
   modbusTCPServer.configureInputRegisters(0x00,NUMBER_OF_DSE*37);
-  modbusTCPServer.configureHoldingRegisters(0x00,100);
+  modbusTCPServer.configureHoldingRegisters(0x00,1000);
   Serial.println(F("> Registros Modbus configurados"));
 
   initializeArrays();//inicializando los arrays
@@ -250,13 +265,14 @@ void loop(){
   generalCommonAlarm = gen1CommonAlarm || gen2CommonAlarm || gen3CommonAlarm || gen4CommonAlarm || master1CommonAlarm || master2CommonAlarm || master3CommonAlarm || master4CommonAlarm;
 
   handleModbusClients();//MANEJANDO LOS CLIENTES
-  readDseAlarms();//LEYENDO LAS LOS REGISTROS DE ALARMAS DE LOS DSE
+  readDse();//LEYENDO LAS LOS REGISTROS DE ALARMAS DE LOS DSE
   computeDseAlarms();//SEPARANDO LAS ALARMAS QUE VIENEN EN EL MISMO REGISTRO
 
   //KONTROL
   if(Serial.available()>0){
     kontrol.update(Serial.read());
   }
+  kontrol.addListener(F("ok"),okCallback);
   kontrol.addListener(F("help"),helpCall);
   kontrol.addListener(F("updateDate"),updateDateCallback);
   kontrol.addListener(F("debug"),debugCallback);
