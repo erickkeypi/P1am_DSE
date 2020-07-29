@@ -336,7 +336,10 @@ void utilidades(){
       Serial.print(" ");
     }
     Serial.println();
-
+    Serial.print("> Master actual: ");
+    Serial.println(masterActual);
+    Serial.print("> Gen actual ");
+    Serial.println(genActual);
     Serial.println();
 
   }
@@ -656,7 +659,7 @@ void writeModbusDiscreteInputs() {
 void writeModbusInputRegisters() {
   for (int i=0;i<NUMBER_OF_DSE;i++){
     for(int j=0;j<37;j++){
-      modbusTCPServer.inputRegisterWrite((i*37)+j,dseIR[i][j]);
+    //modbusTCPServer.inputRegisterWrite((i*37)+j,dseIR[i][j]);
     }
   }
 }
@@ -666,8 +669,10 @@ void readModbusHoldingRegisters(){
   for(int i=0;i<5;i++){
     schHolding[i]= modbusTCPServer.holdingRegisterRead(i+10);
   }
+  masterActual = modbusTCPServer.holdingRegisterRead(499);
   masterScreen[58]= modbusTCPServer.holdingRegisterRead(558);
   masterScreen[59]= modbusTCPServer.holdingRegisterRead(559);
+  genActual = modbusTCPServer.holdingRegisterRead(599);
   genScreen[54]= modbusTCPServer.holdingRegisterRead(654);
   genScreen[55]= modbusTCPServer.holdingRegisterRead(655);
 }

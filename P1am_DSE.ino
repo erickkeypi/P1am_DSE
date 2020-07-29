@@ -31,8 +31,8 @@
 
 //////////////////////////////////////////////////////
 //MACROS
-#define NUMBER_OF_DSE 2//SI SON MAS DE 8 MODULOS SE DEBE CONFIGURAR LOS OBJETOs DE EthernetClient y ModbusTCPClient
-#define NUMBER_OF_MODBUS_CLIENTS 8  //CANTIDAD DE CLIENTES QUE PUEDEN CONETARSE POR MODBUS
+#define NUMBER_OF_DSE 7//SI SON MAS DE 8 MODULOS SE DEBE CONFIGURAR LOS OBJETOs DE EthernetClient y ModbusTCPClient
+#define NUMBER_OF_MODBUS_CLIENTS 1  //CANTIDAD DE CLIENTES QUE PUEDEN CONETARSE POR MODBUS
 #define MODBUS_TIMEOUT 200
 #define MODBUS_RECONNECT_TIME 60000
 #define UPDATE_DATE_PERIOD 1296000000 //LA FECHA DE LOS DSE SE ACTUALIZAN CADA 15 DIAS
@@ -133,14 +133,14 @@ ModbusTCPClient modbusTCPClient[8]={
 };
 //IPs DE LOS MODULOS DSE
 //AGREGAR TANTAS IPs COMO MODULOS DSE
-IPAddress servers[8]={
+IPAddress servers[7]={
   IPAddress(192, 168, 137,  126),//MASTER1
   IPAddress(192, 168, 137,  128),//GEN1
-  IPAddress(192, 168, 137,  121),//MASTER2
-  IPAddress(192, 168, 137,  122),//MASTER3
-  IPAddress(192, 168, 137,  123),//MASTER4
-  IPAddress(192, 168, 137,  124),//GEN2
-  IPAddress(192, 168, 137,  125)//GEN3
+  IPAddress(192, 168, 137,  124),//MASTER2
+  IPAddress(192, 168, 137,  125),//MASTER3
+  IPAddress(192, 168, 137,  126),//MASTER4
+  IPAddress(192, 168, 137,  127),//GEN2
+  IPAddress(192, 168, 137,  129)//GEN3
 };
 
 //////////////////////////////////////////////////////
