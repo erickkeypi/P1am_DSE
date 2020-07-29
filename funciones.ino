@@ -223,6 +223,83 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
       Serial.println("> Master system key pressed");
     }
   }
+  //generador screen
+  if(dseErrorComm[genActual]){//SI HAY UN ERROR DE CONEXION
+    for(int i=0;i<60;i++){//borrando los valores
+      genScreen[i]=0;
+    }
+    genScreen[48] = 'N'<<8 | 'o';
+    genScreen[49] = ' '<<8 | 'C';
+    genScreen[50] = 'o'<<8 | 'n';
+    genScreen[51] = 'e'<<8 | 'c';
+    genScreen[52] = 't'<<8 | 'a';
+    genScreen[53] = 'd'<<8 | 'o';
+  } else{
+    genScreen[0] = dseInputs[genActual][1];//gen available
+    genScreen[1] = dseInputs[genActual][2];//gen brk
+    genScreen[2] = modbusTCPClient[genActual].holdingRegisterRead(1659);//gen l-l avr
+    genScreen[3] = modbusTCPClient[genActual].holdingRegisterRead(1658);//gen l-l avr
+    genScreen[4] = variablesPrincipales[genActual][0];//gen hz
+    genScreen[5] = variablesPrincipales[genActual][3];//gen kw
+    genScreen[6] = variablesPrincipales[genActual][4];//gen kw
+    genScreen[7] = variablesPrincipales[genActual][5];//gen %
+    genScreen[8] = modbusTCPClient[genActual].holdingRegisterRead(1715);//bus l-l avr
+    genScreen[9] = modbusTCPClient[genActual].holdingRegisterRead(1714);//bus l-l avr
+    genScreen[10] = modbusTCPClient[genActual].holdingRegisterRead(1091);//bus freq
+    genScreen[11] = modbusTCPClient[genActual].holdingRegisterRead(1606);//bus %
+    genScreen[12] = modbusTCPClient[genActual].holdingRegisterRead(1093);//gen l1-n
+    genScreen[13] = modbusTCPClient[genActual].holdingRegisterRead(1092);//gen l1-n
+    genScreen[14] = modbusTCPClient[genActual].holdingRegisterRead(1095);//gen l2-n
+    genScreen[15] = modbusTCPClient[genActual].holdingRegisterRead(1094);//gen l2-n
+    genScreen[16] = modbusTCPClient[genActual].holdingRegisterRead(1097);//gen l3-n
+    genScreen[17] = modbusTCPClient[genActual].holdingRegisterRead(1096);//gen l3-n
+    genScreen[18] = modbusTCPClient[genActual].holdingRegisterRead(1099);//gen l1-l2
+    genScreen[19] = modbusTCPClient[genActual].holdingRegisterRead(1098);//gen l1-l2
+    genScreen[20] = modbusTCPClient[genActual].holdingRegisterRead(1101);//gen l2-l3
+    genScreen[21] = modbusTCPClient[genActual].holdingRegisterRead(1100);//gen l2-l3
+    genScreen[22] = modbusTCPClient[genActual].holdingRegisterRead(1103);//gen l3-l1
+    genScreen[23] = modbusTCPClient[genActual].holdingRegisterRead(1102);//gen l3-l1
+    genScreen[24] = modbusTCPClient[genActual].holdingRegisterRead(1105);//gen l3-l1
+    genScreen[25] = modbusTCPClient[genActual].holdingRegisterRead(1104);//gen l3-l1
+    genScreen[26] = modbusTCPClient[genActual].holdingRegisterRead(1107);//gen l3-l1
+    genScreen[27] = modbusTCPClient[genActual].holdingRegisterRead(1106);//gen l3-l1
+    genScreen[28] = modbusTCPClient[genActual].holdingRegisterRead(1109);//gen l3-l1
+    genScreen[29] = modbusTCPClient[genActual].holdingRegisterRead(1108);//gen l3-l1
+    genScreen[30] = modbusTCPClient[genActual].holdingRegisterRead(1557);//pf
+    genScreen[31] = modbusTCPClient[genActual].holdingRegisterRead(1545);//kva
+    genScreen[32] = modbusTCPClient[genActual].holdingRegisterRead(1544);//kva
+    genScreen[33] = modbusTCPClient[genActual].holdingRegisterRead(1553);//kvar
+    genScreen[34] = modbusTCPClient[genActual].holdingRegisterRead(1552);//kvar
+    genScreen[35] = modbusTCPClient[genActual].holdingRegisterRead(1073);//fase roteacion
+    genScreen[36] = modbusTCPClient[genActual].holdingRegisterRead(1024);//oil press
+    genScreen[37] = modbusTCPClient[genActual].holdingRegisterRead(1029);//battery
+    genScreen[38] = modbusTCPClient[genActual].holdingRegisterRead(1030);//engine speed
+    genScreen[39] = modbusTCPClient[genActual].holdingRegisterRead(1025);//coolant temp
+    genScreen[40] = modbusTCPClient[genActual].holdingRegisterRead(1027);//fuel level
+    genScreen[41] = modbusTCPClient[genActual].holdingRegisterRead(1799);//engine runtime
+    genScreen[42] = modbusTCPClient[genActual].holdingRegisterRead(1798);//engine runtime
+    genScreen[43] = modbusTCPClient[genActual].holdingRegisterRead(1809);//number starts
+    genScreen[44] = modbusTCPClient[genActual].holdingRegisterRead(1808);//number starts
+    genScreen[45] = modbusTCPClient[genActual].holdingRegisterRead(1801);//kwh
+    genScreen[46] = modbusTCPClient[genActual].holdingRegisterRead(1800);//kwh
+    genScreen[47] = variablesPrincipales[genActual][8];//modo
+
+    for(int j=0;j<6;j++){//LEYENDO EL NOMBRE
+      genScreen[48+j] = variablesPrincipales[genActual][9+j];
+    }
+
+    if(genButtonPress){
+      if(modbusTCPClient[genActual].beginTransmission(HOLDING_REGISTERS,4104,2)){
+        modbusTCPClient[genActual].write(genScreen[55]);
+        modbusTCPClient[genActual].write(genScreen[54]);
+        modbusTCPClient[genActual].endTransmission();
+      } else{
+        dseErrorComm[genActual]=true;
+      }
+      genButtonPress = false;
+      Serial.println("> Gen system key pressed");
+    }
+  }
 }
 
 void computeDseAlarms(){
@@ -535,6 +612,7 @@ void computeSchRegisters(){
 void readModbusCoils(){
   updateModulesDates = modbusTCPServer.coilRead(0);
   masterButtonPress = modbusTCPServer.coilRead(1);
+  genButtonPress = modbusTCPServer.coilRead(2);
 
   gen1CommonAlarm = modbusTCPServer.coilRead(21);
   gen2CommonAlarm = modbusTCPServer.coilRead(22);
@@ -553,7 +631,8 @@ void readModbusCoils(){
 
 void writeModbusCoils(){
   modbusTCPServer.coilWrite(0,updateModulesDates);
-    modbusTCPServer.coilWrite(1,masterButtonPress);
+  modbusTCPServer.coilWrite(1,masterButtonPress);
+  modbusTCPServer.coilWrite(2,genButtonPress);
   modbusTCPServer.coilWrite(10,busLive);
   modbusTCPServer.coilWrite(20,generalCommonAlarm);
   //escribiendo registros del schedule
@@ -589,6 +668,8 @@ void readModbusHoldingRegisters(){
   }
   masterScreen[58]= modbusTCPServer.holdingRegisterRead(558);
   masterScreen[59]= modbusTCPServer.holdingRegisterRead(559);
+  genScreen[54]= modbusTCPServer.holdingRegisterRead(654);
+  genScreen[55]= modbusTCPServer.holdingRegisterRead(655);
 }
 
 void writeModbusHoldingRegisters(){
@@ -605,6 +686,9 @@ void writeModbusHoldingRegisters(){
 
   for(int i=0;i<60;i++){//escribiendo los registros para la pantalla de master
     modbusTCPServer.holdingRegisterWrite(500+i,masterScreen[i]);
+  }
+  for(int i=0;i<60;i++){//escribiendo los registros para la pantalla de generador
+    modbusTCPServer.holdingRegisterWrite(600+i,genScreen[i]);
   }
   // int a='a';
   // int b ='b';

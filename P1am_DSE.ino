@@ -46,7 +46,7 @@ unsigned long frame=0;
 unsigned long beforeFrame = 0;
 TimeEvent frameEvent = TimeEvent(1000);
 bool debug = true;
-bool debugUtilidades = false;
+bool debugUtilidades = true;
 
 KontrolMin kontrol = KontrolMin();//KONTROL
 RTCZero rtc;//RTC
@@ -72,21 +72,24 @@ int dseIR[NUMBER_OF_DSE][37];//alarmas leidas
 bool dseAlarms[NUMBER_OF_DSE][150];//bits de las alarmas
 bool dseErrorComm[NUMBER_OF_DSE];//error de comunicacion
 unsigned int variablesPrincipales[NUMBER_OF_DSE][20];//array para guardar valores que se presentan en la pantalla principal
-char nombres[8][12] = {//LOS NOMBRES NO PUEDEN TENER MAS DE 11 CARACTERES
+char nombres[7][12] = {//LOS NOMBRES NO PUEDEN TENER MAS DE 11 CARACTERES
   "Master SBA1",
   "Gen 1",
-  "No Connect",
-  "No Connect",
-  "No Connect",
-  "No Connect",
-  "No Connect",
-  "No Connect"
+  "Master SBA2",
+  "Master SBB1",
+  "Master SBB2",
+  "Gen 2",
+  "Gen 3"
 };
 
 bool dseInputs[8][10];
 unsigned int masterScreen[60];
 unsigned int masterActual = 0;
 bool masterButtonPress = false;
+unsigned int genActual = 1;
+unsigned int genScreen[60];
+bool genButtonPress = false;
+
 //
 // bool masterXMainAvailable = false;
 // bool masterXBusAvailable = false;
