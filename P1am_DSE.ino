@@ -46,7 +46,7 @@ unsigned long frame=0;
 unsigned long beforeFrame = 0;
 TimeEvent frameEvent = TimeEvent(1000);
 bool debug = true;
-bool debugUtilidades = true;
+bool debugUtilidades = false;
 
 KontrolMin kontrol = KontrolMin();//KONTROL
 RTCZero rtc;//RTC
@@ -86,6 +86,7 @@ char nombres[8][12] = {//LOS NOMBRES NO PUEDEN TENER MAS DE 11 CARACTERES
 bool dseInputs[8][10];
 unsigned int masterScreen[60];
 unsigned int masterActual = 0;
+bool masterButtonPress = false;
 //
 // bool masterXMainAvailable = false;
 // bool masterXBusAvailable = false;

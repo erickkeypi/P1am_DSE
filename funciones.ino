@@ -73,7 +73,6 @@ void handleModbusClients(){//funcion que maneja la conexion de los clientes
 }
 
 void readDse(){//esta funcion lee los registros de alarma de los DSE
-
   for(int d=0;d<NUMBER_OF_DSE;d++){
     if(dseErrorComm[d]){//SI HAY UN ERROR DE CONEXION CON EL DSE ACTUAL SE SIGUE CON EL SIGUIENTE
       limpiarAlarma(d);//SE LIMPIAN LAS ALARMAS DEL MODULO QUE TIENE UN ERROR DE CONEXION
@@ -211,11 +210,19 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
     for(int j=0;j<6;j++){//LEYENDO EL NOMBRE
       masterScreen[52+j] = variablesPrincipales[masterActual][9+j];
     }
+
+    if(masterButtonPress){
+      if(modbusTCPClient[masterActual].beginTransmission(HOLDING_REGISTERS,4104,2)){
+        modbusTCPClient[masterActual].write(masterScreen[59]);
+        modbusTCPClient[masterActual].write(masterScreen[58]);
+        modbusTCPClient[masterActual].endTransmission();
+      } else{
+        dseErrorComm[masterActual]=true;
+      }
+      masterButtonPress = false;
+      Serial.println("> Master system key pressed");
+    }
   }
-
-
-
-
 }
 
 void computeDseAlarms(){
@@ -527,6 +534,7 @@ void computeSchRegisters(){
 ////MODBUS
 void readModbusCoils(){
   updateModulesDates = modbusTCPServer.coilRead(0);
+  masterButtonPress = modbusTCPServer.coilRead(1);
 
   gen1CommonAlarm = modbusTCPServer.coilRead(21);
   gen2CommonAlarm = modbusTCPServer.coilRead(22);
@@ -545,6 +553,7 @@ void readModbusCoils(){
 
 void writeModbusCoils(){
   modbusTCPServer.coilWrite(0,updateModulesDates);
+    modbusTCPServer.coilWrite(1,masterButtonPress);
   modbusTCPServer.coilWrite(10,busLive);
   modbusTCPServer.coilWrite(20,generalCommonAlarm);
   //escribiendo registros del schedule
@@ -578,6 +587,8 @@ void readModbusHoldingRegisters(){
   for(int i=0;i<5;i++){
     schHolding[i]= modbusTCPServer.holdingRegisterRead(i+10);
   }
+  masterScreen[58]= modbusTCPServer.holdingRegisterRead(558);
+  masterScreen[59]= modbusTCPServer.holdingRegisterRead(559);
 }
 
 void writeModbusHoldingRegisters(){
