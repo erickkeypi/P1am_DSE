@@ -68,6 +68,8 @@ TimeEvent dseReconnect = TimeEvent(MODBUS_RECONNECT_TIME);
 //TIMER UTILIZADO PARA LA ACTUALIZAION DEL RTC
 TimeEvent rtcUpdate = TimeEvent(10000);//Al principio el RTC trata de actualizarse cada 10 segundos luego pasa al tiempo definido por UPDATE_DATE_PERIOD
 
+TimeEvent readDseTimer = TimeEvent(1000);
+
 //////////////////////////////////////////////////////
 //ARRAYS
 int dseIR[NUMBER_OF_DSE][37];//alarmas leidas
@@ -221,6 +223,8 @@ void setup(){
   updateDateEvent.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
   updateDateEvent.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
 
+  readDseTimer.repeat();
+  readDseTimer.start();
   //////////////////////////////////////////////////////
   //CONFIGURANDO TIMER DE RECONECCION
   dseReconnect.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
@@ -283,8 +287,11 @@ void loop(){
   generalCommonAlarm = gen1CommonAlarm || gen2CommonAlarm || gen3CommonAlarm || gen4CommonAlarm || master1CommonAlarm || master2CommonAlarm || master3CommonAlarm || master4CommonAlarm;
 
   handleModbusClients();//MANEJANDO LOS CLIENTES
-  readDse();//LEYENDO LAS LOS REGISTROS DE ALARMAS DE LOS DSE
-  computeDseAlarms();//SEPARANDO LAS ALARMAS QUE VIENEN EN EL MISMO REGISTRO
+  if(readDseTimer.run()){
+    readDse();//LEYENDO LAS LOS REGISTROS DE ALARMAS DE LOS DSE
+    computeDseAlarms();//SEPARANDO LAS ALARMAS QUE VIENEN EN EL MISMO REGISTRO
+  }
+
 
   //KONTROL
   if(Serial.available()>0){
