@@ -35,7 +35,7 @@
 #define NUMBER_OF_DSE 7//SI SON MAS DE 8 MODULOS SE DEBE CONFIGURAR LOS OBJETOs DE EthernetClient y ModbusTCPClient
 #define NUMBER_OF_MODBUS_CLIENTS 1  //CANTIDAD DE CLIENTES QUE PUEDEN CONETARSE POR MODBUS
 #define MODBUS_TIMEOUT 200
-#define MODBUS_RECONNECT_TIME 60000
+#define MODBUS_RECONNECT_TIME 30000
 #define UPDATE_DATE_PERIOD 1296000000 //LA FECHA DE LOS DSE SE ACTUALIZAN CADA 15 DIAS
 #define RTC_UPDATE_TIME 300000 // se actualiza el rtc cada 5 minutos
 
@@ -47,7 +47,7 @@ unsigned long frame=0;
 unsigned long beforeFrame = 0;
 TimeEvent frameEvent = TimeEvent(1000);
 bool debug = true;
-bool debugUtilidades = true;
+bool debugUtilidades = false;
 
 KontrolMin kontrol = KontrolMin();//KONTROL
 RTCZero rtc;//RTC
@@ -58,6 +58,7 @@ TimeEvent updateDateEvent = TimeEvent(UPDATE_DATE_PERIOD);
 unsigned long updateDateLastTime = 0;//variable complementaria utilizada para hacer que el boton deje de estar presionado
 bool updatingDate = false;//variable complementaria para actualizar la fecha de los DSE
 bool updateModulesDates = false;//VARIABLE QUE SE ACTIVA CUANDO SE VAYAN A ACTUALIZAR LOS MODULOS DSE
+int dseBase =0;//numero de DSe de donde se leera la fecha
 
 //////////////////////////////////////////////////////
 //TIMER UTILIZADO PARA LA RECONECCION DE LOS DSE CUANDO SE PIERDE LA COMUNICACION
@@ -71,7 +72,7 @@ TimeEvent rtcUpdate = TimeEvent(10000);//Al principio el RTC trata de actualizar
 //ARRAYS
 int dseIR[NUMBER_OF_DSE][37];//alarmas leidas
 bool dseAlarms[NUMBER_OF_DSE][150];//bits de las alarmas
-bool dseErrorComm[NUMBER_OF_DSE];//error de comunicacion
+bool dseErrorComm[8];//error de comunicacion
 unsigned int variablesPrincipales[NUMBER_OF_DSE][20];//array para guardar valores que se presentan en la pantalla principal
 char nombres[7][12] = {//LOS NOMBRES NO PUEDEN TENER MAS DE 11 CARACTERES
   "Master SBA1",
@@ -90,6 +91,13 @@ bool masterButtonPress = false;
 unsigned int genActual = 1;
 unsigned int genScreen[60];
 bool genButtonPress = false;
+
+//MODOS DE LECTURA PARA HACER QUE SOLO LEA MASTERS O GENERADORES
+#define READ_MASTER_AND_GEN 0
+#define READ_ONLY_MASTER 1
+#define READ_ONLY_GEN 2
+
+int modoLectura = READ_MASTER_AND_GEN;
 
 //
 // bool masterXMainAvailable = false;
@@ -121,15 +129,16 @@ bool master4CommonAlarm = false;
 //CONFIGURACION ETHERNET-MODBUS
 byte mac[] = {0x60, 0x52, 0xD0, 0x06, 0x68, 0x98};//P1AM-ETH MAC
 IPAddress ip(192, 168, 137, 177);//P1AM-ETH IP
-EthernetClient modules[7];//CANTIDAD MAXIMA DE MODULOS ES DE 8
-ModbusTCPClient modbusTCPClient[7]={
+EthernetClient modules[8];//CANTIDAD MAXIMA DE MODULOS ES DE 8
+ModbusTCPClient modbusTCPClient[8]={
   ModbusTCPClient(modules[0]),
   ModbusTCPClient(modules[1]),
   ModbusTCPClient(modules[2]),
   ModbusTCPClient(modules[3]),
   ModbusTCPClient(modules[4]),
   ModbusTCPClient(modules[5]),
-  ModbusTCPClient(modules[6])
+  ModbusTCPClient(modules[6]),
+  ModbusTCPClient(modules[7])
 };
 //IPs DE LOS MODULOS DSE
 //AGREGAR TANTAS IPs COMO MODULOS DSE
@@ -184,12 +193,14 @@ TimeEvent schDurationTimer = TimeEvent(5000);
 
 
 unsigned int testInt = 0;
+String testString;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////SETUP////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup(){
   //////////////////////////////////////////////////////
   //UTILIDADES
+  testString.reserve(2);
   pinMode(LED_BUILTIN,OUTPUT);//LED FRONTAL
   pinMode(SWITCH_BUILTIN,INPUT);//SWITCH FRONTAL
   Serial.begin(115200);//COMUNICACION SERIAL
@@ -281,17 +292,20 @@ void loop(){
   }
   kontrol.addListener(F("ok"),okCallback);
   kontrol.addListener(F("help"),helpCall);
-  kontrol.addListener(F("updateDate"),updateDateCallback);
+  kontrol.addListener(F("updatedate"),updateDateCallback);
   kontrol.addListener(F("debug"),debugCallback);
-  kontrol.addListener(F("connectModules"),connectModules);
-  kontrol.addListener(F("printMemory"),printMemory);
+  kontrol.addListener(F("connectmodules"),connectModules);
+  kontrol.addListener(F("printmemory"),printMemory);
+  kontrol.addListener(F("readmode"),modoLecturaCallback);
 
   //TIMER DE RECONEXION
   if(dseReconnect.run()){
+    Serial.println(F("> Reconexion Timer"));
     for(int i=0; i<NUMBER_OF_DSE; i++){
-      //SE DESACTIVA EL ERROR DE CONEXION PARA QUE LA FUNCION QUE LEE LOS MODULOS INTENTE CONECTARSE
+      //SE DESACTIVA EL ERROR DE CONEXION Y SE INTENTA LA CONEXION
       dseErrorComm[i]=false;
     }
+    connectModules();
   }
 
   //TIMER DE ACTUALIZACION DE FECHA DE LOS MODULOS
@@ -308,6 +322,7 @@ void loop(){
   if(updatingDate && (millis() > (updateDateLastTime + 1000))){
     updateModulesDates = false;
     updatingDate =false;
+    updateDseDates();
     Serial.println(F("> Fecha de modulos actualizadas"));
   }
 
