@@ -28,6 +28,7 @@
 #include <RTCZero.h>
 #include <MemoryFree.h>
 #include <KontrolMin.h>
+#include <StateMachine.h>
 
 //////////////////////////////////////////////////////
 //MACROS
@@ -120,27 +121,26 @@ bool master4CommonAlarm = false;
 //CONFIGURACION ETHERNET-MODBUS
 byte mac[] = {0x60, 0x52, 0xD0, 0x06, 0x68, 0x98};//P1AM-ETH MAC
 IPAddress ip(192, 168, 137, 177);//P1AM-ETH IP
-EthernetClient modules[8];//CANTIDAD MAXIMA DE MODULOS ES DE 8
-ModbusTCPClient modbusTCPClient[8]={
+EthernetClient modules[7];//CANTIDAD MAXIMA DE MODULOS ES DE 8
+ModbusTCPClient modbusTCPClient[7]={
   ModbusTCPClient(modules[0]),
   ModbusTCPClient(modules[1]),
   ModbusTCPClient(modules[2]),
   ModbusTCPClient(modules[3]),
   ModbusTCPClient(modules[4]),
   ModbusTCPClient(modules[5]),
-  ModbusTCPClient(modules[6]),
-  ModbusTCPClient(modules[7])
+  ModbusTCPClient(modules[6])
 };
 //IPs DE LOS MODULOS DSE
 //AGREGAR TANTAS IPs COMO MODULOS DSE
 IPAddress servers[7]={
   IPAddress(192, 168, 137,  126),//MASTER1
   IPAddress(192, 168, 137,  128),//GEN1
-  IPAddress(192, 168, 137,  124),//MASTER2
-  IPAddress(192, 168, 137,  125),//MASTER3
+  IPAddress(192, 168, 137,  127),//MASTER2
+  IPAddress(192, 168, 137,  127),//MASTER3
   IPAddress(192, 168, 137,  126),//MASTER4
   IPAddress(192, 168, 137,  127),//GEN2
-  IPAddress(192, 168, 137,  129)//GEN3
+  IPAddress(192, 168, 137,  128)//GEN3
 };
 
 //////////////////////////////////////////////////////
@@ -248,7 +248,7 @@ void setup(){
   }
   //////////////////////////////////////////////////////
   //CONFIGURANDO REGISTROS MODBUS
-  modbusTCPServer.configureDiscreteInputs(0X00,100);
+  modbusTCPServer.configureDiscreteInputs(0X00,200);
   modbusTCPServer.configureCoils(0x00,200);
   modbusTCPServer.configureInputRegisters(0x00,NUMBER_OF_DSE*37);
   modbusTCPServer.configureHoldingRegisters(0x00,1000);

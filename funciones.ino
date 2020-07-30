@@ -76,6 +76,15 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
   for(int d=0;d<NUMBER_OF_DSE;d++){
     if(dseErrorComm[d]){//SI HAY UN ERROR DE CONEXION CON EL DSE ACTUAL SE SIGUE CON EL SIGUIENTE
       limpiarAlarma(d);//SE LIMPIAN LAS ALARMAS DEL MODULO QUE TIENE UN ERROR DE CONEXION
+      for(int j=0;j<20;j++){//limpiando las variables principales
+        variablesPrincipales[d][j] = 0;
+      }
+      variablesPrincipales[d][9] = 'N'<<8 | 'o';
+      variablesPrincipales[d][10] = ' '<<8 | 'C';
+      variablesPrincipales[d][11] = 'o'<<8 | 'n';
+      variablesPrincipales[d][12] = 'e'<<8 | 'c';
+      variablesPrincipales[d][13] = 't'<<8 | ' ';
+      variablesPrincipales[d][14] = 0;
       continue;
     }
 
@@ -653,6 +662,9 @@ void writeModbusDiscreteInputs() {
     for(int j=0;j<10;j++){
       modbusTCPServer.discreteInputWrite((i*10)+j,dseInputs[i][j]);
     }
+  }
+  for(int i=0;i<NUMBER_OF_DSE;i++){
+    modbusTCPServer.discreteInputWrite(100+i,dseErrorComm[i]);
   }
 }
 
