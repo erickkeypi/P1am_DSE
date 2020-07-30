@@ -130,40 +130,41 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
         Serial.println(modbusTCPClient[d].lastError());
         dseErrorComm[d]=true;//SE ACTIVA EL ERROR SI SE DETECTA UN ERROR EN LA LECTURA DE LOS REGISTROS
       }
-
+      if(!dseErrorComm[d]){
       //LEYENDO VARIABLES PARA LA PANTALLA PRINCIPAL
-      if(d == 0 || (d >= 2 && d <= 4)){//si es master
-        variablesPrincipales[d][0] = modbusTCPClient[d].holdingRegisterRead(1059);//HZ
-        variablesPrincipales[d][1] = modbusTCPClient[d].holdingRegisterRead(1699);//V(1)
-        variablesPrincipales[d][2] = modbusTCPClient[d].holdingRegisterRead(1698);//V(2)
-        variablesPrincipales[d][3] = modbusTCPClient[d].holdingRegisterRead(1561);//KW(1)
-        variablesPrincipales[d][4] = modbusTCPClient[d].holdingRegisterRead(1560);//KW(2)
-        variablesPrincipales[d][5] = modbusTCPClient[d].holdingRegisterRead(1582);//%
-        variablesPrincipales[d][6] = modbusTCPClient[d].holdingRegisterRead(1577);//KVar(1)
-        variablesPrincipales[d][7] = modbusTCPClient[d].holdingRegisterRead(1576);//KVar(2)
+        if(d == 0 || (d >= 2 && d <= 4)){//si es master
+          variablesPrincipales[d][0] = modbusTCPClient[d].holdingRegisterRead(1059);//HZ
+          variablesPrincipales[d][1] = modbusTCPClient[d].holdingRegisterRead(1699);//V(1)
+          variablesPrincipales[d][2] = modbusTCPClient[d].holdingRegisterRead(1698);//V(2)
+          variablesPrincipales[d][3] = modbusTCPClient[d].holdingRegisterRead(1561);//KW(1)
+          variablesPrincipales[d][4] = modbusTCPClient[d].holdingRegisterRead(1560);//KW(2)
+          variablesPrincipales[d][5] = modbusTCPClient[d].holdingRegisterRead(1582);//%
+          variablesPrincipales[d][6] = modbusTCPClient[d].holdingRegisterRead(1577);//KVar(1)
+          variablesPrincipales[d][7] = modbusTCPClient[d].holdingRegisterRead(1576);//KVar(2)
 
-        dseInputs[d][0] = modbusTCPClient[d].holdingRegisterRead(48658);//MAINS AVAILABLE
-        dseInputs[d][1] = modbusTCPClient[d].holdingRegisterRead(48661);//BUS AVAILABLE
-        dseInputs[d][2] = modbusTCPClient[d].holdingRegisterRead(48659);//MAIN BRK
-        dseInputs[d][3] = modbusTCPClient[d].holdingRegisterRead(48660);//BUS BRK
-        dseInputs[d][4] = dseInputs[d][2] | dseInputs[d][3];
+          dseInputs[d][0] = modbusTCPClient[d].holdingRegisterRead(48658);//MAINS AVAILABLE
+          dseInputs[d][1] = modbusTCPClient[d].holdingRegisterRead(48661);//BUS AVAILABLE
+          dseInputs[d][2] = modbusTCPClient[d].holdingRegisterRead(48659);//MAIN BRK
+          dseInputs[d][3] = modbusTCPClient[d].holdingRegisterRead(48660);//BUS BRK
+          dseInputs[d][4] = dseInputs[d][2] | dseInputs[d][3];
 
-      } else if(d == 1 || (d > 4)){//si es generador
-        variablesPrincipales[d][0] = modbusTCPClient[d].holdingRegisterRead(1031);//HZ
-        variablesPrincipales[d][1] = modbusTCPClient[d].holdingRegisterRead(1651);//V(1)
-        variablesPrincipales[d][2] = modbusTCPClient[d].holdingRegisterRead(1650);//V(2)
-        variablesPrincipales[d][3] = modbusTCPClient[d].holdingRegisterRead(1537);//KW(1)
-        variablesPrincipales[d][4] = modbusTCPClient[d].holdingRegisterRead(1536);//KW(2)
-        variablesPrincipales[d][5] = modbusTCPClient[d].holdingRegisterRead(1558);//%
-        variablesPrincipales[d][6] = modbusTCPClient[d].holdingRegisterRead(1553);//KVar(1)
-        variablesPrincipales[d][7] = modbusTCPClient[d].holdingRegisterRead(1552);//KVar(2)
+        } else if(d == 1 || (d > 4)){//si es generador
+          variablesPrincipales[d][0] = modbusTCPClient[d].holdingRegisterRead(1031);//HZ
+          variablesPrincipales[d][1] = modbusTCPClient[d].holdingRegisterRead(1651);//V(1)
+          variablesPrincipales[d][2] = modbusTCPClient[d].holdingRegisterRead(1650);//V(2)
+          variablesPrincipales[d][3] = modbusTCPClient[d].holdingRegisterRead(1537);//KW(1)
+          variablesPrincipales[d][4] = modbusTCPClient[d].holdingRegisterRead(1536);//KW(2)
+          variablesPrincipales[d][5] = modbusTCPClient[d].holdingRegisterRead(1558);//%
+          variablesPrincipales[d][6] = modbusTCPClient[d].holdingRegisterRead(1553);//KVar(1)
+          variablesPrincipales[d][7] = modbusTCPClient[d].holdingRegisterRead(1552);//KVar(2)
 
-        dseInputs[d][1] = modbusTCPClient[d].holdingRegisterRead(48661);//GEN AVAILABLE
-        dseInputs[d][2] = modbusTCPClient[d].holdingRegisterRead(48659);//GEN BRK
-      }
-      variablesPrincipales[d][8] = modbusTCPClient[d].holdingRegisterRead(772);//MODE
-      for(int j=0;j<6;j++){//LEYENDO EL NOMBRE
-        variablesPrincipales[d][9+(j)] = nombres[d][j*2]<<8 | nombres[d][(j*2)+1];
+          dseInputs[d][1] = modbusTCPClient[d].holdingRegisterRead(48661);//GEN AVAILABLE
+          dseInputs[d][2] = modbusTCPClient[d].holdingRegisterRead(48659);//GEN BRK
+        }
+        variablesPrincipales[d][8] = modbusTCPClient[d].holdingRegisterRead(772);//MODE
+        for(int j=0;j<6;j++){//LEYENDO EL NOMBRE
+          variablesPrincipales[d][9+(j)] = nombres[d][j*2]<<8 | nombres[d][(j*2)+1];
+        }
       }
     }
   }
@@ -671,8 +672,6 @@ void updateDseDates(){
             }
           }
         }
-
-
       } else {
         Serial.println(F("> Error al actualizar RTC de modulo"));
       }
@@ -680,9 +679,51 @@ void updateDseDates(){
     break;
 
     case READ_ONLY_GEN:
+    for(int i=0;i<NUMBER_OF_DSE;i++){
+      if(i == dseBase || i==0 || i==2 || i==3 || i==4){//saltando el dse y los master
+        continue;
+      }
+      if(!dseErrorComm[i] && modbusTCPClient[dseBase].connected()){
+        if(modbusTCPClient[dseBase].requestFrom(HOLDING_REGISTERS,1792,2)){
+          if(modbusTCPClient[dseBase].available()){
+            unsigned long time = modbusTCPClient[dseBase].read() << 16 | modbusTCPClient[dseBase].read();
+
+            if(modbusTCPClient[i].beginTransmission(HOLDING_REGISTERS,1792,2)){
+              modbusTCPClient[i].write(time >> 16);
+              modbusTCPClient[i].write(time);
+              modbusTCPClient[i].endTransmission();
+              Serial.println(F("> RTC de modulo actualizado"));
+            }
+          }
+        }
+      } else {
+        Serial.println(F("> Error al actualizar RTC de modulo"));
+      }
+    }
     break;
 
     case READ_ONLY_MASTER:
+    for(int i=0;i<NUMBER_OF_DSE;i++){
+      if(i == dseBase || i==1 || i==5 || i==6 || i==7){//saltando el dse y los gens
+        continue;
+      }
+      if(!dseErrorComm[i] && modbusTCPClient[dseBase].connected()){
+        if(modbusTCPClient[dseBase].requestFrom(HOLDING_REGISTERS,1792,2)){
+          if(modbusTCPClient[dseBase].available()){
+            unsigned long time = modbusTCPClient[dseBase].read() << 16 | modbusTCPClient[dseBase].read();
+
+            if(modbusTCPClient[i].beginTransmission(HOLDING_REGISTERS,1792,2)){
+              modbusTCPClient[i].write(time >> 16);
+              modbusTCPClient[i].write(time);
+              modbusTCPClient[i].endTransmission();
+              Serial.println(F("> RTC de modulo actualizado"));
+            }
+          }
+        }
+      } else {
+        Serial.println(F("> Error al actualizar RTC de modulo"));
+      }
+    }
     break;
   }
 }

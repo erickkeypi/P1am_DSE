@@ -97,7 +97,7 @@ bool genButtonPress = false;
 #define READ_ONLY_MASTER 1
 #define READ_ONLY_GEN 2
 
-int modoLectura = READ_MASTER_AND_GEN;
+int modoLectura = READ_ONLY_GEN;
 
 //
 // bool masterXMainAvailable = false;
@@ -145,10 +145,10 @@ ModbusTCPClient modbusTCPClient[8]={
 IPAddress servers[7]={
   IPAddress(192, 168, 137,  126),//MASTER1
   IPAddress(192, 168, 137,  128),//GEN1
-  IPAddress(192, 168, 137,  127),//MASTER2
-  IPAddress(192, 168, 137,  127),//MASTER3
+  IPAddress(192, 168, 137,  126),//MASTER2
+  IPAddress(192, 168, 137,  126),//MASTER3
   IPAddress(192, 168, 137,  126),//MASTER4
-  IPAddress(192, 168, 137,  127),//GEN2
+  IPAddress(192, 168, 137,  128),//GEN2
   IPAddress(192, 168, 137,  128)//GEN3
 };
 
@@ -300,7 +300,7 @@ void loop(){
 
   //TIMER DE RECONEXION
   if(dseReconnect.run()){
-    Serial.println(F("> Reconexion Timer"));
+    //Serial.println(F("> Reconexion Timer"));
     for(int i=0; i<NUMBER_OF_DSE; i++){
       //SE DESACTIVA EL ERROR DE CONEXION Y SE INTENTA LA CONEXION
       dseErrorComm[i]=false;
