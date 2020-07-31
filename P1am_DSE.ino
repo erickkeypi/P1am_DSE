@@ -29,6 +29,7 @@
 #include <MemoryFree.h>
 #include <KontrolMin.h>
 #include <StateMachine.h>
+#include <SD.h>
 
 //////////////////////////////////////////////////////
 //MACROS
@@ -195,6 +196,13 @@ unsigned int schHolding[5]={0,0,0,0,0};
 
 TimeEvent schDurationTimer = TimeEvent(5000);
 
+///////////
+//SD CARD//
+///////////
+const int chipSelect = SDCARD_SS_PIN;
+String dataWriteSD;
+
+
 
 unsigned int testInt = 0;
 String testString;
@@ -205,6 +213,8 @@ void setup(){
   //////////////////////////////////////////////////////
   //UTILIDADES
   testString.reserve(2);
+  dataWriteSD.reserve(30);
+  dataWriteSD = F("123456789012345678901234567890");
   pinMode(LED_BUILTIN,OUTPUT);//LED FRONTAL
   pinMode(SWITCH_BUILTIN,INPUT);//SWITCH FRONTAL
   Serial.begin(115200);//COMUNICACION SERIAL
@@ -212,11 +222,13 @@ void setup(){
   frameEvent.repeat();
   frameEvent.start();
 
+
+
   //while(!Serial){}
   if(debug){
     Serial.println(F("\n**********INIT**********"));
   }
-
+  SD_Begin();
   Serial.println(F("> Iniciando RTC"));
   rtc.begin();
 
@@ -267,14 +279,18 @@ void setup(){
   //CONFIGURANDO REGISTROS MODBUS
   modbusTCPServer.configureDiscreteInputs(0X00,200);
   modbusTCPServer.configureCoils(0x00,200);
-  modbusTCPServer.configureInputRegisters(0x00,NUMBER_OF_DSE*37);
-  modbusTCPServer.configureHoldingRegisters(0x00,1000);
+  modbusTCPServer.configureInputRegisters(0x00,10);
+  modbusTCPServer.configureHoldingRegisters(0x00,1500);
   Serial.println(F("> Registros Modbus configurados"));
 
   initializeArrays();//inicializando los arrays
 
   connectModules();
   readModuleDate();
+
+  dataloggerInit();
+  dataWriteSD = F("PLC REINICIADO");
+  datalogger();
 
 }//FIN SETUP
 
@@ -308,6 +324,7 @@ void loop(){
   kontrol.addListener(F("connectmodules"),connectModules);
   kontrol.addListener(F("printmemory"),printMemory);
   kontrol.addListener(F("readmode"),modoLecturaCallback);
+  kontrol.addListener(F("test"),testCallback);
 
   //TIMER DE RECONEXION
   if(dseReconnect.run()){
