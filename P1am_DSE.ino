@@ -94,6 +94,7 @@ unsigned int genActual = 1;
 unsigned int genScreen[60];
 bool genButtonPress = false;
 unsigned int busScreen[50];
+unsigned int priorityChange[4];
 
 //MODOS DE LECTURA PARA HACER QUE SOLO LEA MASTERS O GENERADORES
 #define READ_MASTER_AND_GEN 0
@@ -147,11 +148,11 @@ ModbusTCPClient modbusTCPClient[8]={
 //AGREGAR TANTAS IPs COMO MODULOS DSE
 IPAddress servers[7]={
   IPAddress(192, 168, 137,  126),//MASTER1
-  IPAddress(192, 168, 137,  128),//GEN1
+  IPAddress(192, 168, 137,  127),//GEN1
   IPAddress(192, 168, 137,  126),//MASTER2
   IPAddress(192, 168, 137,  126),//MASTER3
   IPAddress(192, 168, 137,  126),//MASTER4
-  IPAddress(192, 168, 137,  128),//GEN2
+  IPAddress(192, 168, 137,  127),//GEN2
   IPAddress(192, 168, 137,  128)//GEN3
 };
 
@@ -287,11 +288,13 @@ void loop(){
   busLive = dseInputs[0][1] || dseInputs[1][2] || dseInputs[2][1] || dseInputs[3][1] || dseInputs[4][1] || dseInputs[5][2] || dseInputs[6][2] || dseInputs[7][2];
   generalCommonAlarm = gen1CommonAlarm || gen2CommonAlarm || gen3CommonAlarm || gen4CommonAlarm || master1CommonAlarm || master2CommonAlarm || master3CommonAlarm || master4CommonAlarm;
 
-  handleModbusClients();//MANEJANDO LOS CLIENTES
+
   if(readDseTimer.run()){
     readDse();//LEYENDO LAS LOS REGISTROS DE ALARMAS DE LOS DSE
     computeDseAlarms();//SEPARANDO LAS ALARMAS QUE VIENEN EN EL MISMO REGISTRO
   }
+  handleModbusClients();//MANEJANDO LOS CLIENTES
+
 
 
   //KONTROL
