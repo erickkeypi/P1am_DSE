@@ -148,11 +148,11 @@ ModbusTCPClient modbusTCPClient[8]={
 //AGREGAR TANTAS IPs COMO MODULOS DSE
 IPAddress servers[7]={
   IPAddress(192, 168, 137,  126),//MASTER1
-  IPAddress(192, 168, 137,  127),//GEN1
+  IPAddress(192, 168, 137,  128),//GEN1
   IPAddress(192, 168, 137,  126),//MASTER2
   IPAddress(192, 168, 137,  126),//MASTER3
   IPAddress(192, 168, 137,  126),//MASTER4
-  IPAddress(192, 168, 137,  127),//GEN2
+  IPAddress(192, 168, 137,  128),//GEN2
   IPAddress(192, 168, 137,  128)//GEN3
 };
 

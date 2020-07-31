@@ -456,23 +456,7 @@ void utilidades(){
       Serial.print(F(" "));
     }
     Serial.println();
-    Serial.print(F("> priority: "));
-    for(int i=0; i<4;i++){
-      Serial.print(busScreen[33+i]);
-      Serial.print(F(" "));
-    }
-    Serial.println();
-    Serial.print(F("> priority change: "));
-    for(int i=0; i<4;i++){
-      Serial.print(modbusTCPServer.holdingRegisterRead(743+i));
-      Serial.print(F(" "));
-    }
-    Serial.println();
-    Serial.println(modbusTCPClient[1].holdingRegisterRead(35104));
-    // Serial.print("> Master actual: ");
-    // Serial.println(masterActual);
-    // Serial.print("> Gen actual ");
-    // Serial.println(genActual);
+    
     Serial.println();
     // modbusTCPClient[1].holdingRegisterWrite(35104,2);//priority
   }
