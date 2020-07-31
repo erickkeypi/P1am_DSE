@@ -93,13 +93,14 @@ bool masterButtonPress = false;
 unsigned int genActual = 1;
 unsigned int genScreen[60];
 bool genButtonPress = false;
+unsigned int busScreen[50];
 
 //MODOS DE LECTURA PARA HACER QUE SOLO LEA MASTERS O GENERADORES
 #define READ_MASTER_AND_GEN 0
 #define READ_ONLY_MASTER 1
 #define READ_ONLY_GEN 2
 
-int modoLectura = READ_ONLY_GEN;
+int modoLectura = READ_MASTER_AND_GEN;
 
 //
 // bool masterXMainAvailable = false;
