@@ -1,12 +1,31 @@
-void dataloggerRead(){
-  String filename = "ALARMS/" +  String(rtc.getMonth()) + "_" + String(rtc.getYear()) + ".csv";
+void dataloggerRead(int _month, int _year){
+  String filename = "ALARMS/" +  String(_month) + "_" + String(_year) + ".csv";
   if(!SD.exists(filename)){
     dataloggerInit();
   }
+  int index = 0;
+  int linea = 0;
+  int inicioData = 0;
+  bool inicioLeido = false;
   File dat = SD.open(filename,FILE_READ);
    if(dat){
     while(dat.available()){
-      Serial.print(char(dat.read()));
+      char letra = dat.read();
+      if(inicioData){
+        alarmLine[index] = letra;
+        index++;
+        if(letra == '\n'){
+          writeAlarmsLineModbus(linea);
+          index = 0;
+          linea++;
+        }
+      }
+      if(!inicioLeido && letra == '\n'){
+        inicioData = dat.position()+1;
+        inicioLeido =true;
+        Serial.println(inicioData);
+      }
+
     }
     dat.close();
   }
@@ -49,18 +68,18 @@ void datalogger(){
   File dat = SD.open(filename,FILE_WRITE);
   if(dat){
     //guardando fecha
-    dat.print(rtc.getMonth());
+    dat.print(twoDigits(rtc.getMonth()));
     dat.print("/");
-    dat.print(rtc.getDay());
+    dat.print(twoDigits(rtc.getDay()));
     dat.print("/");
-    dat.print(rtc.getYear());
+    dat.print(twoDigits(rtc.getYear()));
     dat.print(",");
     //guardando hora
-    dat.print(rtc.getHours());
+    dat.print(twoDigits(rtc.getHours()));
     dat.print(":");
-    dat.print(rtc.getMinutes());
+    dat.print(twoDigits(rtc.getMinutes()));
     dat.print(":");
-    dat.print(rtc.getSeconds());
+    dat.print(twoDigits(rtc.getSeconds()));
     dat.print(",");
     //guardando descipcion de alarma
     dat.println(dataWriteSD);

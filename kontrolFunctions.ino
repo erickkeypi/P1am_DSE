@@ -45,5 +45,6 @@ void modoLecturaCallback(){
 
 void testCallback(){
   Serial.println(F("> Test callback"));
-  dataloggerRead();
+  dataloggerRead(8,20);
+  Serial.println();
 }

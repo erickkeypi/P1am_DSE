@@ -201,6 +201,7 @@ TimeEvent schDurationTimer = TimeEvent(5000);
 ///////////
 const int chipSelect = SDCARD_SS_PIN;
 String dataWriteSD;
+char alarmLine[50];
 
 
 
@@ -215,6 +216,7 @@ void setup(){
   testString.reserve(2);
   dataWriteSD.reserve(30);
   dataWriteSD = F("123456789012345678901234567890");
+
   pinMode(LED_BUILTIN,OUTPUT);//LED FRONTAL
   pinMode(SWITCH_BUILTIN,INPUT);//SWITCH FRONTAL
   Serial.begin(115200);//COMUNICACION SERIAL

@@ -456,7 +456,7 @@ void utilidades(){
       Serial.print(F(" "));
     }
     Serial.println();
-    
+
     Serial.println();
     // modbusTCPClient[1].holdingRegisterWrite(35104,2);//priority
   }
@@ -946,6 +946,9 @@ void writeModbusHoldingRegisters(){
   for(int i=0;i<50;i++){//escribiendo los registros para la pantalla de generador
     modbusTCPServer.holdingRegisterWrite(700+i,busScreen[i]);
   }
+  modbusTCPServer.holdingRegisterWrite(1240,rtc.getMonth());
+  modbusTCPServer.holdingRegisterWrite(1241,rtc.getYear());
+
   // modbusTCPClient[1].holdingRegisterWrite(35104,2);//priority
   // int a='a';
   // int b ='b';
@@ -954,5 +957,62 @@ void writeModbusHoldingRegisters(){
   // modbusTCPServer.holdingRegisterWrite(0,letra);
   // letra = 'c'<<8 | 'd';
   // modbusTCPServer.holdingRegisterWrite(1,letra);
+
+}
+
+void writeAlarmsLineModbus(unsigned int _reg){
+  int primeraComa = 0;
+  int segundaComa = 0;
+  int final =0;
+  for(int i=0;i<50;i++){
+    if(alarmLine[i] == ','){
+      primeraComa = i;
+      break;
+    }
+  }
+  for(int i=primeraComa+1;i<50;i++){
+    if(alarmLine[i] == ','){
+      segundaComa = i;
+      break;
+    }
+  }
+  for(int i=segundaComa+1;i<50;i++){
+    if(alarmLine[i] == '\n'){
+      final = i;
+      break;
+    }
+  }
+
+  char buff[30];
+  for (int i=0;i<30;i++){
+    buff[i]=0;
+  }
+  for(int i=0;i<primeraComa;i++){
+    buff[i] = alarmLine[i];
+  }
+  for(int j=0;j<5;j++){//
+    modbusTCPServer.holdingRegisterWrite(800+j+(_reg*5),buff[j*2] <<8 | buff[j*2+1]);
+  }
+
+  for (int i=0;i<30;i++){
+    buff[i]=0;
+  }
+  for(int i=primeraComa+1;i<segundaComa;i++){
+    buff[i-(primeraComa+1)] = alarmLine[i];
+  }
+  for(int j=0;j<5;j++){//
+    modbusTCPServer.holdingRegisterWrite(850+j+(_reg*5),buff[j*2] <<8 | buff[j*2+1]);
+  }
+
+  for (int i=0;i<30;i++){
+    buff[i]=0;
+  }
+  for(int i=segundaComa+1;i<final;i++){
+    buff[i-(segundaComa+1)] = alarmLine[i];
+  }
+  for(int j=0;j<15;j++){//
+    modbusTCPServer.holdingRegisterWrite(900+j+(_reg*15),buff[j*2] <<8 | buff[j*2+1]);
+  }
+
 
 }
