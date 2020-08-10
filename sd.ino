@@ -5,33 +5,40 @@ void dataloggerRead(int _month, int _year){
   }
   int index = 0;
   int linea = 0;
-  int inicioData = 0;
-  bool inicioLeido = false;
+  int cantidadLineas = 0;
   File dat = SD.open(filename,FILE_READ);
    if(dat){
-    while(dat.available()){
-      char letra = dat.read();
-      if(inicioData){
+    for(int i=800;i<1036;i++){
+      modbusTCPServer.holdingRegisterWrite(i,0);
+    }
+
+    linea = 10*tabla;
+    cantidadLineas = (dat.size() - 24)/55;
+    // Serial.println(cantidadLineas);
+    while(linea<cantidadLineas){
+      dat.seek(23+1+(55*linea));
+      index=0;
+      for(int i=0;i<55;i++){
+        char letra = dat.read();
         alarmLine[index] = letra;
         index++;
-        if(letra == '\n'){
-          writeAlarmsLineModbus(linea);
-          index = 0;
-          linea++;
-        }
+        // Serial.print(letra);
       }
-      if(!inicioLeido && letra == '\n'){
-        inicioData = dat.position()+1;
-        inicioLeido =true;
-        Serial.println(inicioData);
+      writeAlarmsLineModbus(linea-(tabla*10));
+      linea ++;
+      if(linea >= (tabla+1)*10){//si la linea se pasa de la tabla correspondiente
+        break;
       }
-
     }
+
     dat.close();
   }
   else {
     Serial.print("error opening ");
     Serial.println(filename);
+    for (int i=800;i<1240;i++){
+      modbusTCPServer.holdingRegisterWrite(i,0);
+    }
     SD_Begin();
   }
 }
@@ -48,7 +55,8 @@ void dataloggerInit(){
   if(!SD.exists(filename)){
     File dat = SD.open(filename,FILE_WRITE);
     if(dat){
-      dat.println(F("DATE,TIME,DESCRIPTION"));
+      Serial.println(F("> Creando archivo de alarmas"));
+      dat.println(F("DATE,TIME,DESCRIPTION "));
       dat.close();
     }
     else {
@@ -67,7 +75,10 @@ void datalogger(){
 
   File dat = SD.open(filename,FILE_WRITE);
   if(dat){
-    //guardando fecha
+    //se debe ir a la posicion 23 "dat.seek(23)" para leer la primera linea
+    //cada linea consecutiva debera ser 23 +(55*linea)
+
+    // guardando fecha
     dat.print(twoDigits(rtc.getMonth()));
     dat.print("/");
     dat.print(twoDigits(rtc.getDay()));
@@ -82,7 +93,14 @@ void datalogger(){
     dat.print(twoDigits(rtc.getSeconds()));
     dat.print(",");
     //guardando descipcion de alarma
-    dat.println(dataWriteSD);
+    dat.print(dataWriteSD);
+    //rellenando
+    unsigned int lineaActual = (dat.size()-23)/55;
+    unsigned int faltante = 23 + ((lineaActual+1)*55) - dat.size();
+    for (int i=0;i<faltante-1;i++){
+      dat.print(" ");
+    }
+    dat.println("");
     dat.close();
   }
   else {

@@ -248,7 +248,9 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
         dseErrorComm[masterActual]=true;
       }
       masterButtonPress = false;
-      Serial.println("> Master system key pressed");
+      Serial.print(F("> Master "));
+      Serial.print(masterActual);
+      Serial.println(" system key pressed");
     }
   }
   //generador screen
@@ -327,6 +329,8 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
       genButtonPress = false;
       Serial.println("> Gen system key pressed");
     }
+
+
   }
 
   //bus screen el bus solo sale delos gen
@@ -512,6 +516,8 @@ void readModuleDate(){
         Serial.println(getTime());
         Serial.print("\t");
         Serial.println(getDate());
+        modbusTCPServer.holdingRegisterWrite(1240,rtc.getMonth());
+        modbusTCPServer.holdingRegisterWrite(1241,rtc.getYear());
       }
     }
   } else {
@@ -946,17 +952,20 @@ void writeModbusHoldingRegisters(){
   for(int i=0;i<50;i++){//escribiendo los registros para la pantalla de generador
     modbusTCPServer.holdingRegisterWrite(700+i,busScreen[i]);
   }
-  modbusTCPServer.holdingRegisterWrite(1240,rtc.getMonth());
-  modbusTCPServer.holdingRegisterWrite(1241,rtc.getYear());
-
   // modbusTCPClient[1].holdingRegisterWrite(35104,2);//priority
-  // int a='a';
-  // int b ='b';
-  // unsigned int letra = a<<8 | b;
-  //
-  // modbusTCPServer.holdingRegisterWrite(0,letra);
-  // letra = 'c'<<8 | 'd';
-  // modbusTCPServer.holdingRegisterWrite(1,letra);
+  unsigned int monthServer = modbusTCPServer.holdingRegisterRead(1240);
+  unsigned int yearServer = modbusTCPServer.holdingRegisterRead(1241);
+  if(monthServer>12){
+    monthServer =1;
+    yearServer++;
+  }
+  if(monthServer<1){
+    monthServer =12;
+    yearServer--;
+  }
+
+  modbusTCPServer.holdingRegisterWrite(1240,monthServer);
+  modbusTCPServer.holdingRegisterWrite(1241,yearServer);
 
 }
 
@@ -980,6 +989,8 @@ void writeAlarmsLineModbus(unsigned int _reg){
     if(alarmLine[i] == '\n'){
       final = i;
       break;
+    }else{
+      final =49;
     }
   }
 

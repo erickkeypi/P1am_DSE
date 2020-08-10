@@ -201,7 +201,10 @@ TimeEvent schDurationTimer = TimeEvent(5000);
 ///////////
 const int chipSelect = SDCARD_SS_PIN;
 String dataWriteSD;
-char alarmLine[50];
+char alarmLine[60];
+unsigned int tabla=0;
+unsigned int monthTable = 1;
+unsigned int yearTable = 20;
 
 
 
@@ -290,9 +293,11 @@ void setup(){
   connectModules();
   readModuleDate();
 
+  // SD.remove("ALARMS/8_20.CSV");
   dataloggerInit();
   dataWriteSD = F("PLC REINICIADO");
   datalogger();
+  dataloggerRead(rtc.getMonth(),rtc.getYear());
 
 }//FIN SETUP
 
@@ -310,6 +315,21 @@ void loop(){
   if(readDseTimer.run()){
     readDse();//LEYENDO LAS LOS REGISTROS DE ALARMAS DE LOS DSE
     computeDseAlarms();//SEPARANDO LAS ALARMAS QUE VIENEN EN EL MISMO REGISTRO
+
+}
+  unsigned int tablaServer = modbusTCPServer.holdingRegisterRead(1243);
+  unsigned int monthServer = modbusTCPServer.holdingRegisterRead(1240);
+  unsigned int yearServer = modbusTCPServer.holdingRegisterRead(1241);
+
+  if(tablaServer != tabla || monthTable != monthServer || yearTable != yearServer){
+    if(tablaServer>10000){
+      tablaServer = 0;
+    }
+    monthTable = monthServer;
+    yearTable = yearServer;
+    tabla = tablaServer;
+    modbusTCPServer.holdingRegisterWrite(1243,tabla);
+    dataloggerRead(monthTable,yearTable);
   }
   handleModbusClients();//MANEJANDO LOS CLIENTES
 
