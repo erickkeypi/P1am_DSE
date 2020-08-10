@@ -12,8 +12,6 @@
 */
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-//HACER LOG DE ERRORES EN SD
-//HACER LED DE ERROR Y LED DE WARNING
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -30,6 +28,7 @@
 #include <KontrolMin.h>
 #include <StateMachine.h>
 #include <SD.h>
+#include "DSEAlarms.h"
 
 //////////////////////////////////////////////////////
 //MACROS
@@ -206,7 +205,8 @@ unsigned int tabla=0;
 unsigned int monthTable = 1;
 unsigned int yearTable = 20;
 
-
+bool oldDseErrorComm[8];
+bool oldDseAlarms[NUMBER_OF_DSE][150];
 
 unsigned int testInt = 0;
 String testString;
@@ -219,6 +219,7 @@ void setup(){
   testString.reserve(2);
   dataWriteSD.reserve(30);
   dataWriteSD = F("123456789012345678901234567890");
+  asignAlarm();
 
   pinMode(LED_BUILTIN,OUTPUT);//LED FRONTAL
   pinMode(SWITCH_BUILTIN,INPUT);//SWITCH FRONTAL
@@ -315,7 +316,7 @@ void loop(){
   if(readDseTimer.run()){
     readDse();//LEYENDO LAS LOS REGISTROS DE ALARMAS DE LOS DSE
     computeDseAlarms();//SEPARANDO LAS ALARMAS QUE VIENEN EN EL MISMO REGISTRO
-
+    activateAlarms();
 }
   unsigned int tablaServer = modbusTCPServer.holdingRegisterRead(1243);
   unsigned int monthServer = modbusTCPServer.holdingRegisterRead(1240);

@@ -45,6 +45,6 @@ void modoLecturaCallback(){
 
 void testCallback(){
   Serial.println(F("> Test callback"));
-  dataloggerRead(8,20);
+  // String p = nombres[0];
   Serial.println();
 }

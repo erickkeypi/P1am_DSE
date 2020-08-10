@@ -6,12 +6,20 @@ void initializeArrays(){
       }
     }
     for(int i=0;i<NUMBER_OF_DSE;i++){
+      for(int j=0;j<150;j++){
+        oldDseAlarms[i][j]=0;
+      }
+    }
+    for(int i=0;i<NUMBER_OF_DSE;i++){
       for(int j=0;j<37;j++){
         dseIR[i][j]=false;
       }
     }
-    for(int i=0; i<NUMBER_OF_DSE; i++){
+    for(int i=0; i<8; i++){
       dseErrorComm[i]=false;
+    }
+    for(int i=0; i<8; i++){
+      oldDseErrorComm[i]=false;
     }
 }
 
@@ -1026,4 +1034,27 @@ void writeAlarmsLineModbus(unsigned int _reg){
   }
 
 
+}
+
+void activateAlarms(){
+  for(int i=0;i<8;i++){
+    if(!oldDseErrorComm[i] && dseErrorComm[i]){
+      dataWriteSD = nombres[i];
+      dataWriteSD += F(" COMM ERROR");
+      datalogger();
+    }
+    oldDseErrorComm[i] = dseErrorComm[i];
+  }
+
+  for(int i=0;i<NUMBER_OF_DSE;i++){
+    for (int j=0;j<150;j++){
+      if(!oldDseAlarms[i][j] && dseAlarms[i][j]){
+        dataWriteSD = nombres[i];
+        dataWriteSD += " ";
+        dataWriteSD += DSEAlarmsString[j];
+        datalogger();
+      }
+      oldDseAlarms[i][j] = dseAlarms[i][j];
+    }
+  }
 }
