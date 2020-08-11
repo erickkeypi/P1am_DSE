@@ -977,7 +977,7 @@ void writeModbusHoldingRegisters(){
 
 }
 
-void writeAlarmsLineModbus(unsigned int _reg){
+void writeAlarmsLineModbus(unsigned int _reg,unsigned int _add){
   int primeraComa = 0;
   int segundaComa = 0;
   int final =0;
@@ -1010,7 +1010,7 @@ void writeAlarmsLineModbus(unsigned int _reg){
     buff[i] = alarmLine[i];
   }
   for(int j=0;j<5;j++){//
-    modbusTCPServer.holdingRegisterWrite(800+j+(_reg*5),buff[j*2] <<8 | buff[j*2+1]);
+    modbusTCPServer.holdingRegisterWrite(_add+j+(_reg*5),buff[j*2] <<8 | buff[j*2+1]);
   }
 
   for (int i=0;i<30;i++){
@@ -1020,7 +1020,7 @@ void writeAlarmsLineModbus(unsigned int _reg){
     buff[i-(primeraComa+1)] = alarmLine[i];
   }
   for(int j=0;j<5;j++){//
-    modbusTCPServer.holdingRegisterWrite(850+j+(_reg*5),buff[j*2] <<8 | buff[j*2+1]);
+    modbusTCPServer.holdingRegisterWrite(_add+50+j+(_reg*5),buff[j*2] <<8 | buff[j*2+1]);
   }
 
   for (int i=0;i<30;i++){
@@ -1030,7 +1030,7 @@ void writeAlarmsLineModbus(unsigned int _reg){
     buff[i-(segundaComa+1)] = alarmLine[i];
   }
   for(int j=0;j<15;j++){//
-    modbusTCPServer.holdingRegisterWrite(900+j+(_reg*15),buff[j*2] <<8 | buff[j*2+1]);
+    modbusTCPServer.holdingRegisterWrite(_add+100+j+(_reg*15),buff[j*2] <<8 | buff[j*2+1]);
   }
 
 
@@ -1051,7 +1051,7 @@ void activateAlarms(){
       if(!oldDseAlarms[i][j] && dseAlarms[i][j]){
         dataWriteSD = nombres[i];
         dataWriteSD += " ";
-        dataWriteSD += DSEAlarmsString[j];
+        dataWriteSD += DSEAlarmsString[j-1];
         datalogger();
       }
       oldDseAlarms[i][j] = dseAlarms[i][j];

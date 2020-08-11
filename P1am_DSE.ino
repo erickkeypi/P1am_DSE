@@ -201,7 +201,8 @@ TimeEvent schDurationTimer = TimeEvent(5000);
 const int chipSelect = SDCARD_SS_PIN;
 String dataWriteSD;
 char alarmLine[60];
-unsigned int tabla=0;
+unsigned int tabla = 0;
+unsigned int tablaActive = 0 ;
 unsigned int monthTable = 1;
 unsigned int yearTable = 20;
 
@@ -286,7 +287,7 @@ void setup(){
   modbusTCPServer.configureDiscreteInputs(0X00,200);
   modbusTCPServer.configureCoils(0x00,200);
   modbusTCPServer.configureInputRegisters(0x00,10);
-  modbusTCPServer.configureHoldingRegisters(0x00,1500);
+  modbusTCPServer.configureHoldingRegisters(0x00,1600);
   Serial.println(F("> Registros Modbus configurados"));
 
   initializeArrays();//inicializando los arrays
