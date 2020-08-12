@@ -45,18 +45,17 @@ void modoLecturaCallback(){
 
 void testCallback(){
   Serial.println(F("> Test callback"));
-  testArray[0] = 'c';
-  testArray[1] = 'd';
-  Serial.println(testArray[0]);
-  Serial.println(testArray[1]);
-  p(testArray);
-  Serial.println(testArray[0]);
-  Serial.println(testArray[1]);
+  // testArray[0] = 'c';
+  // testArray[1] = 'd';
+  // Serial.println(testArray[0]);
+  // Serial.println(testArray[1]);
+  // p(testArray);
+  // Serial.println(testArray[0]);
+  // Serial.println(testArray[1]);
 
-  // dataWriteSD = F("TEST ALARMS");
-  // alarmsLogger();
-  // alarmsLoggerRead();
-  // String p = nombres[0];
+  dataWriteSD = F("TEST ALARMS");
+  alarmsLogger();
+  alarmsLoggerRead();
   Serial.println();
 }
 

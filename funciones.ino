@@ -1037,6 +1037,48 @@ void writeAlarmsLineModbus(unsigned int _reg,unsigned int _add){
 }
 
 void activateAlarms(){
+  static bool alarmaDesactivada = false;
+  if(alarmaDesactivada){
+    SD.remove(F("ACTIVE.csv"));
+    for(int i=0;i<8;i++){
+      if(oldDseErrorComm[i]){
+        dataWriteSD = nombres[i];
+        dataWriteSD += F(" COMM ERROR");
+        alarmsLogger();
+      }
+    }
+    for(int i=0;i<NUMBER_OF_DSE;i++){
+      for (int j=0;j<150;j++){
+        if(oldDseAlarms[i][j]){
+          dataWriteSD = nombres[i];
+          dataWriteSD += " ";
+          dataWriteSD += DSEAlarmsString[j-1];
+          alarmsLogger();
+        }
+      }
+    }
+    alarmaDesactivada=false;
+  }
+  for(int i=0;i<8;i++){
+    if(oldDseErrorComm[i] && !dseErrorComm[i]){
+      alarmaDesactivada =true;
+      break;
+    }
+  }
+  for(int i=0;i<NUMBER_OF_DSE;i++){
+    for (int j=0;j<150;j++){
+      if(oldDseAlarms[i][j] && !dseAlarms[i][j]){
+        alarmaDesactivada =true;
+        break;
+      }
+      if(alarmaDesactivada){
+        break;
+      }
+    }
+  }
+
+
+
   for(int i=0;i<8;i++){
     if(!oldDseErrorComm[i] && dseErrorComm[i]){
       dataWriteSD = nombres[i];

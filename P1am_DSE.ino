@@ -299,6 +299,7 @@ void setup(){
   readModuleDate();
 
   // SD.remove("ALARMS/8_20.CSV");
+  SD.remove(F("ACTIVE.csv"));
   dataloggerInit();
   dataWriteSD = F("PLC REINICIADO");
   datalogger();
