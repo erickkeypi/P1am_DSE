@@ -53,8 +53,8 @@ void alarmsLoggerRead(){
   int cantidadLineas = 0;
   File dat = SD.open(filename,FILE_READ);
    if(dat){
-    for(int i=800;i<1036;i++){//////######
-      // modbusTCPServer.holdingRegisterWrite(i,0);
+    for(int i=1300;i<1536;i++){//////######
+      modbusTCPServer.holdingRegisterWrite(i,0);
     }
 
     linea = 10*tablaActive;
@@ -67,9 +67,9 @@ void alarmsLoggerRead(){
         char letra = dat.read();
         alarmLine[index] = letra;
         index++;
-        Serial.print(letra);
+        // Serial.print(letra);
       }
-      // writeAlarmsLineModbus(linea-(tabla*10));
+      writeAlarmsLineModbus(linea-(tabla*10),1300);
       linea ++;
       if(linea >= (tablaActive+1)*10){//si la linea se pasa de la tabla correspondiente
         break;
@@ -81,8 +81,8 @@ void alarmsLoggerRead(){
   else {
     Serial.print("error opening ");
     Serial.println(filename);
-    for (int i=800;i<1240;i++){
-      // modbusTCPServer.holdingRegisterWrite(i,0);
+    for (int i=1300;i<1560;i++){
+      modbusTCPServer.holdingRegisterWrite(i,0);
     }
     SD_Begin();
   }
