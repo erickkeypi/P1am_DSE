@@ -211,6 +211,9 @@ bool oldDseAlarms[NUMBER_OF_DSE][150];
 
 unsigned int testInt = 0;
 String testString;
+
+
+char testArray[10];
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////SETUP////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -301,6 +304,8 @@ void setup(){
   datalogger();
   dataloggerRead(rtc.getMonth(),rtc.getYear());
 
+  Serial.println(F("> Setup finalizado"));
+
 }//FIN SETUP
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -318,6 +323,7 @@ void loop(){
     readDse();//LEYENDO LAS LOS REGISTROS DE ALARMAS DE LOS DSE
     computeDseAlarms();//SEPARANDO LAS ALARMAS QUE VIENEN EN EL MISMO REGISTRO
     activateAlarms();
+    digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));
 }
   unsigned int tablaServer = modbusTCPServer.holdingRegisterRead(1243);
   unsigned int monthServer = modbusTCPServer.holdingRegisterRead(1240);
@@ -333,6 +339,19 @@ void loop(){
     modbusTCPServer.holdingRegisterWrite(1243,tabla);
     dataloggerRead(monthTable,yearTable);
   }
+
+  tablaServer = modbusTCPServer.holdingRegisterRead(1563);
+  if(tablaServer != tablaActive){
+    if(tablaServer>10000){
+      tablaServer = 0;
+    }
+    tablaActive = tablaServer;
+    modbusTCPServer.holdingRegisterWrite(1563,tablaActive);
+    alarmsLoggerRead();
+  }
+
+
+
   handleModbusClients();//MANEJANDO LOS CLIENTES
 
 

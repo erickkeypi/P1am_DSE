@@ -1042,6 +1042,7 @@ void activateAlarms(){
       dataWriteSD = nombres[i];
       dataWriteSD += F(" COMM ERROR");
       datalogger();
+      alarmsLogger();
     }
     oldDseErrorComm[i] = dseErrorComm[i];
   }
@@ -1053,6 +1054,7 @@ void activateAlarms(){
         dataWriteSD += " ";
         dataWriteSD += DSEAlarmsString[j-1];
         datalogger();
+        alarmsLogger();
       }
       oldDseAlarms[i][j] = dseAlarms[i][j];
     }
