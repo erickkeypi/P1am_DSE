@@ -1,4 +1,4 @@
-void initializeArrays(){
+void initializeArrays(){//FUNCION QUE INICIALIZA LOS ARRAYS
   if(debug){Serial.println(F("> Arrays inicializados"));}
     for(int i=0;i<NUMBER_OF_DSE;i++){
       for(int j=0;j<150;j++){
@@ -23,9 +23,10 @@ void initializeArrays(){
     }
 }
 
-void connectModules(){
+void connectModules(){//FUNCION UTILIZADA PARA LA CONEXION DE LOS MODULOS DSE
+
   for(int d=0;d<NUMBER_OF_DSE;d++){
-    switch (modoLectura){
+    switch (modoLectura){//SE CONECTAN LOS MODULOS DE ACUERDO AL MODO DE LECTURA
       case READ_MASTER_AND_GEN:
       break;
 
@@ -43,14 +44,19 @@ void connectModules(){
       }
       break;
     }
+
     if (!modbusTCPClient[d].connected()) {// client not connected, start the Modbus TCP client
+
       Serial.print(F("> Intentando conectar al servidor Modbus con IP:"));
       Serial.println(servers[d]);
-      if (!modbusTCPClient[d].begin(servers[d])) {
+
+      if (!modbusTCPClient[d].begin(servers[d])) {//SI NO SE CONECTA
+
         Serial.print(F("> Fallo al conectar, intentando otra vez en "));
         Serial.print(MODBUS_RECONNECT_TIME/1000);Serial.println(" segundos");
         dseErrorComm[d]=true;//SI NO SE LOGRA LA CONEXION SE ACTIVA EL ERROR DE CONEXION DEL DSE ACTUAL
-      } else {
+
+      } else {//SI SE CONECTA
         Serial.println(F("> Conectado a servidor Modbus"));
         dseErrorComm[d]=false;//SI SE LOGRA LA CONEXION SE BORRA EL ERROR DE CONEXION DEL DSE ACTUAL
       }
@@ -98,35 +104,28 @@ void handleModbusClients(){//funcion que maneja la conexion de los clientes
 }
 
 void readDse(){//esta funcion lee los registros de alarma de los DSE
+
   for(int d=0;d<NUMBER_OF_DSE;d++){
+    //////////////////////////////////////////////////////
+    //DETERMINANDO EL ERROR DE CONEXION
     if(dseErrorComm[d]){//SI HAY UN ERROR DE CONEXION CON EL DSE ACTUAL SE SIGUE CON EL SIGUIENTE
       limpiarAlarma(d);//SE LIMPIAN LAS ALARMAS DEL MODULO QUE TIENE UN ERROR DE CONEXION
       for(int j=0;j<20;j++){//limpiando las variables principales
         variablesPrincipales[d][j] = 0;
       }
+      //CAMBIANDO EL NOMBRE A "No Conectado"
       variablesPrincipales[d][9] = 'N'<<8 | 'o';
       variablesPrincipales[d][10] = ' '<<8 | 'C';
       variablesPrincipales[d][11] = 'o'<<8 | 'n';
       variablesPrincipales[d][12] = 'e'<<8 | 'c';
       variablesPrincipales[d][13] = 't'<<8 | ' ';
       variablesPrincipales[d][14] = 0;
-      continue;
+      continue;//SIGUENDO CON EL SIGUIENTE MODULO
     }
-
+    //////////////////////////////////////////////////////
+    //LEYENDO LOS REGISTROS DE ALARMAS
     if (!modbusTCPClient[d].connected()) {// client not connected, start the Modbus TCP client
       connectModules();
-      // if(debug){
-      //   Serial.print(F("> Intentando conectar al servidor Modbus con IP:"));
-      //   Serial.println(servers[d]);
-      // }
-      //
-      // if (!modbusTCPClient[d].begin(servers[d])) {
-      //   if(debug){Serial.print(F("> Fallo al conectar, intentando otra vez en "));Serial.print(MODBUS_RECONNECT_TIME/1000);Serial.println(" segundos");}
-      //   dseErrorComm[d]=true;//SI NO SE LOGRA LA CONEXION SE ACTIVA EL ERROR DE CONEXION DEL DSE ACTUAL
-      // } else {
-      //   if(debug){Serial.println(F("> Conectado a servidor Modbus"));}
-      //   dseErrorComm[d]=false;//SI SE LOGRA LA CONEXION SE BORRA EL ERROR DE CONEXION DEL DSE ACTUAL
-      // }
     } else {
       if(modbusTCPClient[d].requestFrom(HOLDING_REGISTERS,39425,37)){//LEYENDO LOS REGITROS DE ALARM
         if(modbusTCPClient[d].available()){
@@ -135,12 +134,15 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
           }
         }
       }
-      else {
+      else {//SI NO SE PUEDE LEER LOS REGISTROS SE ACTIVA EL ERROR DE CONEXION
+        Serial.print(F("> "));
         Serial.println(modbusTCPClient[d].lastError());
         dseErrorComm[d]=true;//SE ACTIVA EL ERROR SI SE DETECTA UN ERROR EN LA LECTURA DE LOS REGISTROS
       }
-      if(!dseErrorComm[d]){
+
+      //////////////////////////////////////////////////////
       //LEYENDO VARIABLES PARA LA PANTALLA PRINCIPAL
+      if(!dseErrorComm[d]){//SI NO HAY ERROR DE CONEXION
         if(d == 0 || (d >= 2 && d <= 4)){//si es master
           variablesPrincipales[d][0] = modbusTCPClient[d].holdingRegisterRead(1059);//HZ
           variablesPrincipales[d][1] = modbusTCPClient[d].holdingRegisterRead(1699);//V(1)
@@ -177,8 +179,8 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
       }
     }
   }
-
-  //master screen
+  //////////////////////////////////////////////////////
+  //PANTALLA DE MASTER
   if(dseErrorComm[masterActual]){//SI HAY UN ERROR DE CONEXION
     for(int i=0;i<60;i++){//borrando los valores
       masterScreen[i]=0;
@@ -247,7 +249,7 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
       masterScreen[52+j] = variablesPrincipales[masterActual][9+j];
     }
 
-    if(masterButtonPress){
+    if(masterButtonPress){//SI SE PRESIONA UN BOTON DE COMANDO ESTE SE ENVIA AL MODULO DSE
       if(modbusTCPClient[masterActual].beginTransmission(HOLDING_REGISTERS,4104,2)){
         modbusTCPClient[masterActual].write(masterScreen[59]);
         modbusTCPClient[masterActual].write(masterScreen[58]);
@@ -258,10 +260,12 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
       masterButtonPress = false;
       Serial.print(F("> Master "));
       Serial.print(masterActual);
-      Serial.println(" system key pressed");
+      Serial.println(F(" system key pressed"));
     }
   }
-  //generador screen
+
+  //////////////////////////////////////////////////////
+  //PANTALLA DE GENERADOR
   if(dseErrorComm[genActual]){//SI HAY UN ERROR DE CONEXION
     for(int i=0;i<60;i++){//borrando los valores
       genScreen[i]=0;
@@ -326,7 +330,7 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
       genScreen[48+j] = variablesPrincipales[genActual][9+j];
     }
 
-    if(genButtonPress){
+    if(genButtonPress){//SI SE PRESIONA UN BOTON DE COMANDO ESTE SE ENVIA AL MODULO DSE
       if(modbusTCPClient[genActual].beginTransmission(HOLDING_REGISTERS,4104,2)){
         modbusTCPClient[genActual].write(genScreen[55]);
         modbusTCPClient[genActual].write(genScreen[54]);
@@ -335,13 +339,14 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
         dseErrorComm[genActual]=true;
       }
       genButtonPress = false;
-      Serial.println("> Gen system key pressed");
+      Serial.print(F("> Gen "));
+      Serial.print(genActual);
+      Serial.println(" system key pressed");
     }
-
-
   }
 
-  //bus screen el bus solo sale delos gen
+  //////////////////////////////////////////////////////
+  //PANTALLA DE BUS. SOLO SALE DE LOS GEN
   if(modoLectura == READ_ONLY_GEN|| modoLectura == READ_MASTER_AND_GEN){
     // for(int i=0;i<50;i++){
     //   busScreen[i]=0;
@@ -352,10 +357,13 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
     unsigned long totalWattsL1=0;
     unsigned long totalWattsL2=0;
     unsigned long totalWattsL3=0;
-    for(int i=0;i<NUMBER_OF_DSE;i++){//leyendo el total de corriente y watts
+
+    //LEYENDO Y SUMANDO LA CORRIENTE Y LOS WATTS DE LOS GEN
+    for(int i=0;i<NUMBER_OF_DSE;i++){
       if(i==0 || (i>=2 && i<=4)){//saltando los masters
         continue;
       }
+
       if(!dseErrorComm[i]){
         currentL1 += modbusTCPClient[i].holdingRegisterRead(1105) << 16 | modbusTCPClient[i].holdingRegisterRead(1104);//gen1 bus current l1
         currentL2 += modbusTCPClient[i].holdingRegisterRead(1107) << 16 | modbusTCPClient[i].holdingRegisterRead(1106);//gen1 bus current l2
@@ -364,10 +372,10 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
         totalWattsL1 += modbusTCPClient[i].holdingRegisterRead(1113) << 16 | modbusTCPClient[i].holdingRegisterRead(1112);//gen1 bus total watts l1
         totalWattsL2 += modbusTCPClient[i].holdingRegisterRead(1115) << 16 | modbusTCPClient[i].holdingRegisterRead(1114);//gen1 bus total watts l2
         totalWattsL3 += modbusTCPClient[i].holdingRegisterRead(1117) << 16 | modbusTCPClient[i].holdingRegisterRead(1116);//gen1 bus total watts l3
-
       }
     }
 
+    //GUARDANDO LOS VALORES SUMADOS EN EL ARRAY
     busScreen[19] = currentL1;
     busScreen[20] = currentL1 >> 16;
     busScreen[21] = currentL2;
@@ -381,6 +389,7 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
     busScreen[29] = totalWattsL3;
     busScreen[30] = totalWattsL3 >> 16;
 
+    //PRIORIDAD Y QUALITY
     if(!dseErrorComm[1]){
       busScreen[33] = modbusTCPClient[1].holdingRegisterRead(35104);//priority
       busScreen[37] = modbusTCPClient[1].holdingRegisterRead(30);//quality
@@ -394,6 +403,7 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
       busScreen[39] = modbusTCPClient[6].holdingRegisterRead(30);//quality
     }
 
+    //LEYENDO OTROS VALORES
     for(int i=0;i<NUMBER_OF_DSE;i++){
       if(i==0 || (i>=2 && i<=4)){//saltando los masters
         continue;
@@ -433,8 +443,7 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
   }
 }
 
-void computeDseAlarms(){
-  //esta funcion separa las 4 alarmas que vienen dentro del mismo registro
+void computeDseAlarms(){//esta funcion separa las 4 alarmas que vienen dentro del mismo registro
   //cada alarma es de 4 bits y solo se busca que este entre los valores de 2 a 4
   for(int i=0;i<NUMBER_OF_DSE;i++){
     for(int j=0;j<37;j++){
@@ -452,55 +461,16 @@ void computeDseAlarms(){
   }
 }
 
-void utilidades(){
-  //updating frame
-  frame = micros() - beforeFrame;
-  beforeFrame = micros();
-  //printing frame time and memory usage
-  if(frameEvent.run() && debugUtilidades){
-    modoLecturaCallback();
-    Serial.print(F("> Frame time(us): "));
-    Serial.println(frame);
-    printMemory();
-    Serial.print(F("> DSE comm error: "));
-    for(int i=0; i<NUMBER_OF_DSE;i++){
-      Serial.print(dseErrorComm[i]);
-      Serial.print(F(" "));
-    }
-    Serial.println();
-
-    Serial.println();
-    // modbusTCPClient[1].holdingRegisterWrite(35104,2);//priority
-  }
-}
-
-void printMemory(){
-  Serial.print(F("> MEM FREE: "));
-  Serial.print(freeMemory(), DEC);
-  Serial.print(", ");
-  float percent = freeMemory();
-  percent = percent*100/32000;
-  Serial.print(percent,2);
-  Serial.println("%");
-}
-
-void test(){
-  for (int i=0;i<NUMBER_OF_DSE;i++){
-    for(int j=0;j<37;j++){
-      dseIR[i][j]=12657;
-    }
-  }
-}
-
-void limpiarAlarma(int modulo){
+void limpiarAlarma(int modulo){//FUNCION QUE LIMPIA LAS ALARMAS
   for(int j=0;j<150;j++){
     dseAlarms[modulo][j]=0;
   }
 }
 
-void readModuleDate(){
 
-  switch (modoLectura) {
+void readModuleDate(){//FUNCION QUE LEE LA FECHA DEL MODULO ELEGIDO COMO BASE
+
+  switch (modoLectura) {//EL MODULO BASE CAMBIA DE ACUERDO AL MODO DE LECTURA
     case READ_MASTER_AND_GEN:
     dseBase =0;
     break;
@@ -513,7 +483,7 @@ void readModuleDate(){
     dseBase =0;
     break;
   }
-
+  //LEYENDO LA FECHA DEL MODULO BASE Y ACTUALIZANDO EL RTC
   if(!dseErrorComm[dseBase] && modbusTCPClient[dseBase].connected()){
     if(modbusTCPClient[dseBase].requestFrom(HOLDING_REGISTERS,1792,2)){
       if(modbusTCPClient[dseBase].available()){
@@ -548,7 +518,212 @@ String getDate(){//funcion que imprime la fecha por serial
   return "Date: " + twoDigits(rtc.getDay()) + "/" + twoDigits(rtc.getMonth()) + "/" + twoDigits(rtc.getYear());
 }
 
-void computeSchRegisters(){
+
+void updateDseDates(){//FUNCION QUE ACTUALIZA LA FECHA DE LOS DSE TOMANDO UN MODULO BASE
+  switch (modoLectura) {
+    case READ_MASTER_AND_GEN:
+    for(int i=0;i<NUMBER_OF_DSE;i++){
+      if(i == dseBase){//saltando el dse base
+        continue;
+      }
+      if(!dseErrorComm[i] && modbusTCPClient[dseBase].connected()){//REVISANDO SIEL MODULO BASE Y EL ACTUAL ESTAN CONECTADOS
+        if(modbusTCPClient[dseBase].requestFrom(HOLDING_REGISTERS,1792,2)){//LLEYENDO REGISTROS DE FECHA
+          if(modbusTCPClient[dseBase].available()){
+            unsigned long time = modbusTCPClient[dseBase].read() << 16 | modbusTCPClient[dseBase].read();
+
+            if(modbusTCPClient[i].beginTransmission(HOLDING_REGISTERS,1792,2)){//ESCRIBIENDO REGISTROS DE FECHA
+              modbusTCPClient[i].write(time >> 16);
+              modbusTCPClient[i].write(time);
+              modbusTCPClient[i].endTransmission();
+              Serial.println(F("> RTC de modulo actualizado"));
+            }
+          }
+        }
+      } else {
+        Serial.println(F("> Error al actualizar RTC de modulo"));
+      }
+    }
+    break;
+
+    case READ_ONLY_GEN:
+    for(int i=0;i<NUMBER_OF_DSE;i++){
+      if(i == dseBase || i==0 || i==2 || i==3 || i==4){//saltando el dse BASE y los master
+        continue;
+      }
+      if(!dseErrorComm[i] && modbusTCPClient[dseBase].connected()){//REVISANDO SIEL MODULO BASE Y EL ACTUAL ESTAN CONECTADOS
+        if(modbusTCPClient[dseBase].requestFrom(HOLDING_REGISTERS,1792,2)){//LLEYENDO REGISTROS DE FECHA
+          if(modbusTCPClient[dseBase].available()){
+            unsigned long time = modbusTCPClient[dseBase].read() << 16 | modbusTCPClient[dseBase].read();
+
+            if(modbusTCPClient[i].beginTransmission(HOLDING_REGISTERS,1792,2)){//ESCRIBIENDO REGISTROS DE FECHA
+              modbusTCPClient[i].write(time >> 16);
+              modbusTCPClient[i].write(time);
+              modbusTCPClient[i].endTransmission();
+              Serial.println(F("> RTC de modulo actualizado"));
+            }
+          }
+        }
+      } else {
+        Serial.println(F("> Error al actualizar RTC de modulo"));
+      }
+    }
+    break;
+
+    case READ_ONLY_MASTER:
+    for(int i=0;i<NUMBER_OF_DSE;i++){
+      if(i == dseBase || i==1 || i==5 || i==6 || i==7){//saltando el dse BASE y los gens
+        continue;
+      }
+      if(!dseErrorComm[i] && modbusTCPClient[dseBase].connected()){//REVISANDO SIEL MODULO BASE Y EL ACTUAL ESTAN CONECTADOS
+        if(modbusTCPClient[dseBase].requestFrom(HOLDING_REGISTERS,1792,2)){//LLEYENDO REGISTROS DE FECHA
+          if(modbusTCPClient[dseBase].available()){
+            unsigned long time = modbusTCPClient[dseBase].read() << 16 | modbusTCPClient[dseBase].read();
+
+            if(modbusTCPClient[i].beginTransmission(HOLDING_REGISTERS,1792,2)){//ESCRIBIENDO REGISTROS DE FECHA
+              modbusTCPClient[i].write(time >> 16);
+              modbusTCPClient[i].write(time);
+              modbusTCPClient[i].endTransmission();
+              Serial.println(F("> RTC de modulo actualizado"));
+            }
+          }
+        }
+      } else {
+        Serial.println(F("> Error al actualizar RTC de modulo"));
+      }
+    }
+    break;
+  }
+}
+
+void writeAlarmsLineModbus(unsigned int _reg,unsigned int _add){//FUNCION PARA ESCRIBIR UNA LINEA DE TEXTO EN LOS REGISTROS MODBUS
+  int primeraComa = 0;//GUARDA EL INDICE DE LA PRIMERA COMA
+  int segundaComa = 0;//GUARDA EL INDICE DE LA SEGUNDA COMA
+  int final =0;//GUARDA EL INDICE DEL FINAL DE LA LINEA
+  for(int i=0;i<50;i++){//BUSCANDO LA PRIMERA COMA
+    if(alarmLine[i] == ','){
+      primeraComa = i;
+      break;
+    }
+  }
+  for(int i=primeraComa+1;i<50;i++){//BUSCANDO LA SEGUNDA COMA
+    if(alarmLine[i] == ','){
+      segundaComa = i;
+      break;
+    }
+  }
+  for(int i=segundaComa+1;i<50;i++){//BUSCANDO EL FINAL DE LA LINEA
+    if(alarmLine[i] == '\n'){
+      final = i;
+      break;
+    }else{
+      final =49;
+    }
+  }
+
+  char buff[30];
+  for (int i=0;i<30;i++){//LIMPIANDO BUFFER
+    buff[i]=0;
+  }
+  for(int i=0;i<primeraComa;i++){//EXTRAYENDO EL TEXTO ANTERIOR A LA PRIMERA COMA
+    buff[i] = alarmLine[i];
+  }
+  for(int j=0;j<5;j++){//ENVIANDO EL TEXTO POR MODBUS
+    modbusTCPServer.holdingRegisterWrite(_add+j+(_reg*5),buff[j*2] <<8 | buff[j*2+1]);
+  }
+
+  for (int i=0;i<30;i++){//LIMPIANDO BUFFER
+    buff[i]=0;
+  }
+  for(int i=primeraComa+1;i<segundaComa;i++){//EXTRAYENDO EL TEXTO ENTRE LAS COMAS
+    buff[i-(primeraComa+1)] = alarmLine[i];
+  }
+  for(int j=0;j<5;j++){//ENVIANDO EL TEXTO POR MODBUS
+    modbusTCPServer.holdingRegisterWrite(_add+50+j+(_reg*5),buff[j*2] <<8 | buff[j*2+1]);
+  }
+
+  for (int i=0;i<30;i++){//LIMPIANDO BUFFER
+    buff[i]=0;
+  }
+  for(int i=segundaComa+1;i<final;i++){//EXTRAYENDO EL TEXTO DESPUES DE LA SEGUNDA COMA
+    buff[i-(segundaComa+1)] = alarmLine[i];
+  }
+  for(int j=0;j<15;j++){//ENVIANDO EL TEXTO POR MODBUS
+    modbusTCPServer.holdingRegisterWrite(_add+100+j+(_reg*15),buff[j*2] <<8 | buff[j*2+1]);
+  }
+}
+
+void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUARDA
+
+  static bool alarmaDesactivada = false;
+
+  if(alarmaDesactivada){
+    //SI SE DESACTIVA UNA ALARMA SE BORRA EL ARCHIVO DE ALARMAS ACTIVAS
+    //LUEGO SE VUELVE A BUSCAR LAS ALARMAS ACTIVAS Y SE GUARDAN
+    SD.remove(F("ACTIVE.csv"));
+    for(int i=0;i<8;i++){//BUSCANDO ALARMAS DE ERROR DE CONEXION
+      if(oldDseErrorComm[i]){
+        dataWriteSD = nombres[i];
+        dataWriteSD += F(" COMM ERROR");
+        alarmsLogger();
+      }
+    }
+    for(int i=0;i<NUMBER_OF_DSE;i++){//BUSCANDO ALARMAS DE LOS DSE
+      for (int j=0;j<150;j++){
+        if(oldDseAlarms[i][j]){
+          dataWriteSD = nombres[i];
+          dataWriteSD += " ";
+          dataWriteSD += DSEAlarmsString[j-1];
+          alarmsLogger();
+        }
+      }
+    }
+    alarmaDesactivada=false;
+  }
+
+  for(int i=0;i<8;i++){//REVISANDO SI SE DESACTIVA UNA ALARMA DE ERROR DE CONEXION
+    if(oldDseErrorComm[i] && !dseErrorComm[i]){
+      alarmaDesactivada =true;
+      break;
+    }
+  }
+
+  for(int i=0;i<NUMBER_OF_DSE;i++){//REVISANDO SI SE DESACTIVA UNA ALARMA DE UN DSE
+    for (int j=0;j<150;j++){
+      if(oldDseAlarms[i][j] && !dseAlarms[i][j]){
+        alarmaDesactivada =true;
+        break;
+      }
+      if(alarmaDesactivada){
+        break;
+      }
+    }
+  }
+
+  for(int i=0;i<8;i++){//REVISANDO SI SE ACTIVA UNA ALARMA DE ERROR DE CONEXION
+    if(!oldDseErrorComm[i] && dseErrorComm[i]){
+      dataWriteSD = nombres[i];
+      dataWriteSD += F(" COMM ERROR");
+      datalogger();//AGREGANDO AL EVENTO LOG
+      alarmsLogger();//AGREGANDO A LAS ALARMAS ACTIVAS
+    }
+    oldDseErrorComm[i] = dseErrorComm[i];
+  }
+
+  for(int i=0;i<NUMBER_OF_DSE;i++){//REVISANDO SI SE ACTIVA UNA ALARMA DE DSE
+    for (int j=0;j<150;j++){
+      if(!oldDseAlarms[i][j] && dseAlarms[i][j]){
+        dataWriteSD = nombres[i];
+        dataWriteSD += " ";
+        dataWriteSD += DSEAlarmsString[j-1];//SE TOMA EL TEXTO DE LA ALARMA DE DSEAlarms.H
+        datalogger();//AGREGANDO AL EVENT LOG
+        alarmsLogger();//AGREGANDO A LAS ALARMAS ACTIVAS
+      }
+      oldDseAlarms[i][j] = dseAlarms[i][j];
+    }
+  }
+}
+
+void computeSchRegisters(){//FUNCION QUE HACE LOS CALCULOS DEL SCHEDULE
   //los siguientes "if" hacen que si se disminuye la cantidad menos que el limite inferior esta pasa a su limite superior
   // si es menor a 0 pasa a 23 y si es mayor a 23 pasa a 0
   //la forma en que esta implementado es porque la variable es sin signo osea que ninca va a ser menor a 0
@@ -641,7 +816,7 @@ void computeSchRegisters(){
     break;
 
   }
-
+  //GUARDANDO RESULTADO EN EL ARRAY
   schHolding[0] = schHour;
   schHolding[1] = schMinute;
   schHolding[2] = schDay;
@@ -704,7 +879,7 @@ void computeSchRegisters(){
 
   //computando si se activa el schedule
   if(schDuration == 0){
-    schDurationTimer.setFrecuency(2000);
+    schDurationTimer.setFrecuency(2000);//TIMER DE 2 SEGUNDOS PARA DESACTIVAR EL SCHEDULE
   }else{
     schDurationTimer.setFrecuency(schDuration*60*1000);
   }
@@ -756,81 +931,6 @@ void computeSchRegisters(){
 
 }
 
-void updateDseDates(){
-  switch (modoLectura) {
-    case READ_MASTER_AND_GEN:
-    for(int i=0;i<NUMBER_OF_DSE;i++){
-      if(i == dseBase){//saltando el dse base
-        continue;
-      }
-      if(!dseErrorComm[i] && modbusTCPClient[dseBase].connected()){
-        if(modbusTCPClient[dseBase].requestFrom(HOLDING_REGISTERS,1792,2)){
-          if(modbusTCPClient[dseBase].available()){
-            unsigned long time = modbusTCPClient[dseBase].read() << 16 | modbusTCPClient[dseBase].read();
-
-            if(modbusTCPClient[i].beginTransmission(HOLDING_REGISTERS,1792,2)){
-              modbusTCPClient[i].write(time >> 16);
-              modbusTCPClient[i].write(time);
-              modbusTCPClient[i].endTransmission();
-              Serial.println(F("> RTC de modulo actualizado"));
-            }
-          }
-        }
-      } else {
-        Serial.println(F("> Error al actualizar RTC de modulo"));
-      }
-    }
-    break;
-
-    case READ_ONLY_GEN:
-    for(int i=0;i<NUMBER_OF_DSE;i++){
-      if(i == dseBase || i==0 || i==2 || i==3 || i==4){//saltando el dse y los master
-        continue;
-      }
-      if(!dseErrorComm[i] && modbusTCPClient[dseBase].connected()){
-        if(modbusTCPClient[dseBase].requestFrom(HOLDING_REGISTERS,1792,2)){
-          if(modbusTCPClient[dseBase].available()){
-            unsigned long time = modbusTCPClient[dseBase].read() << 16 | modbusTCPClient[dseBase].read();
-
-            if(modbusTCPClient[i].beginTransmission(HOLDING_REGISTERS,1792,2)){
-              modbusTCPClient[i].write(time >> 16);
-              modbusTCPClient[i].write(time);
-              modbusTCPClient[i].endTransmission();
-              Serial.println(F("> RTC de modulo actualizado"));
-            }
-          }
-        }
-      } else {
-        Serial.println(F("> Error al actualizar RTC de modulo"));
-      }
-    }
-    break;
-
-    case READ_ONLY_MASTER:
-    for(int i=0;i<NUMBER_OF_DSE;i++){
-      if(i == dseBase || i==1 || i==5 || i==6 || i==7){//saltando el dse y los gens
-        continue;
-      }
-      if(!dseErrorComm[i] && modbusTCPClient[dseBase].connected()){
-        if(modbusTCPClient[dseBase].requestFrom(HOLDING_REGISTERS,1792,2)){
-          if(modbusTCPClient[dseBase].available()){
-            unsigned long time = modbusTCPClient[dseBase].read() << 16 | modbusTCPClient[dseBase].read();
-
-            if(modbusTCPClient[i].beginTransmission(HOLDING_REGISTERS,1792,2)){
-              modbusTCPClient[i].write(time >> 16);
-              modbusTCPClient[i].write(time);
-              modbusTCPClient[i].endTransmission();
-              Serial.println(F("> RTC de modulo actualizado"));
-            }
-          }
-        }
-      } else {
-        Serial.println(F("> Error al actualizar RTC de modulo"));
-      }
-    }
-    break;
-  }
-}
 
 ////MODBUS
 void readModbusCoils(){
@@ -977,128 +1077,43 @@ void writeModbusHoldingRegisters(){
 
 }
 
-void writeAlarmsLineModbus(unsigned int _reg,unsigned int _add){
-  int primeraComa = 0;
-  int segundaComa = 0;
-  int final =0;
-  for(int i=0;i<50;i++){
-    if(alarmLine[i] == ','){
-      primeraComa = i;
-      break;
+
+void utilidades(){
+  //updating frame
+  frame = micros() - beforeFrame;
+  beforeFrame = micros();
+  //printing frame time and memory usage
+  if(frameEvent.run() && debugUtilidades){
+    modoLecturaCallback();
+    Serial.print(F("> Frame time(us): "));
+    Serial.println(frame);
+    printMemory();
+    Serial.print(F("> DSE comm error: "));
+    for(int i=0; i<NUMBER_OF_DSE;i++){
+      Serial.print(dseErrorComm[i]);
+      Serial.print(F(" "));
     }
-  }
-  for(int i=primeraComa+1;i<50;i++){
-    if(alarmLine[i] == ','){
-      segundaComa = i;
-      break;
-    }
-  }
-  for(int i=segundaComa+1;i<50;i++){
-    if(alarmLine[i] == '\n'){
-      final = i;
-      break;
-    }else{
-      final =49;
-    }
-  }
+    Serial.println();
 
-  char buff[30];
-  for (int i=0;i<30;i++){
-    buff[i]=0;
+    Serial.println();
+    // modbusTCPClient[1].holdingRegisterWrite(35104,2);//priority
   }
-  for(int i=0;i<primeraComa;i++){
-    buff[i] = alarmLine[i];
-  }
-  for(int j=0;j<5;j++){//
-    modbusTCPServer.holdingRegisterWrite(_add+j+(_reg*5),buff[j*2] <<8 | buff[j*2+1]);
-  }
-
-  for (int i=0;i<30;i++){
-    buff[i]=0;
-  }
-  for(int i=primeraComa+1;i<segundaComa;i++){
-    buff[i-(primeraComa+1)] = alarmLine[i];
-  }
-  for(int j=0;j<5;j++){//
-    modbusTCPServer.holdingRegisterWrite(_add+50+j+(_reg*5),buff[j*2] <<8 | buff[j*2+1]);
-  }
-
-  for (int i=0;i<30;i++){
-    buff[i]=0;
-  }
-  for(int i=segundaComa+1;i<final;i++){
-    buff[i-(segundaComa+1)] = alarmLine[i];
-  }
-  for(int j=0;j<15;j++){//
-    modbusTCPServer.holdingRegisterWrite(_add+100+j+(_reg*15),buff[j*2] <<8 | buff[j*2+1]);
-  }
-
-
 }
 
-void activateAlarms(){
-  static bool alarmaDesactivada = false;
-  if(alarmaDesactivada){
-    SD.remove(F("ACTIVE.csv"));
-    for(int i=0;i<8;i++){
-      if(oldDseErrorComm[i]){
-        dataWriteSD = nombres[i];
-        dataWriteSD += F(" COMM ERROR");
-        alarmsLogger();
-      }
-    }
-    for(int i=0;i<NUMBER_OF_DSE;i++){
-      for (int j=0;j<150;j++){
-        if(oldDseAlarms[i][j]){
-          dataWriteSD = nombres[i];
-          dataWriteSD += " ";
-          dataWriteSD += DSEAlarmsString[j-1];
-          alarmsLogger();
-        }
-      }
-    }
-    alarmaDesactivada=false;
-  }
-  for(int i=0;i<8;i++){
-    if(oldDseErrorComm[i] && !dseErrorComm[i]){
-      alarmaDesactivada =true;
-      break;
-    }
-  }
-  for(int i=0;i<NUMBER_OF_DSE;i++){
-    for (int j=0;j<150;j++){
-      if(oldDseAlarms[i][j] && !dseAlarms[i][j]){
-        alarmaDesactivada =true;
-        break;
-      }
-      if(alarmaDesactivada){
-        break;
-      }
-    }
-  }
+void printMemory(){
+  Serial.print(F("> MEM FREE: "));
+  Serial.print(freeMemory(), DEC);
+  Serial.print(", ");
+  float percent = freeMemory();
+  percent = percent*100/32000;
+  Serial.print(percent,2);
+  Serial.println("%");
+}
 
-
-
-  for(int i=0;i<8;i++){
-    if(!oldDseErrorComm[i] && dseErrorComm[i]){
-      dataWriteSD = nombres[i];
-      dataWriteSD += F(" COMM ERROR");
-      datalogger();
-      alarmsLogger();
-    }
-    oldDseErrorComm[i] = dseErrorComm[i];
-  }
-
-  for(int i=0;i<NUMBER_OF_DSE;i++){
-    for (int j=0;j<150;j++){
-      if(!oldDseAlarms[i][j] && dseAlarms[i][j]){
-        dataWriteSD = nombres[i];
-        dataWriteSD += " ";
-        dataWriteSD += DSEAlarmsString[j-1];
-        datalogger();
-        alarmsLogger();
-      }
-      oldDseAlarms[i][j] = dseAlarms[i][j];
+void test(){
+  for (int i=0;i<NUMBER_OF_DSE;i++){
+    for(int j=0;j<37;j++){
+      dseIR[i][j]=12657;
     }
   }
 }

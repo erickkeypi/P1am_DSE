@@ -1,14 +1,5 @@
 /*
   PROGRAMA PARA COMPLEMENTAR LA PANTALLA CMORE TRABAJANDO EN CONJUNTO CON ESTA
-
-  EN ESTE PROGRAMA SE LEEN Y SEPARAN LAS ALARMAS DE LOS MODULOS DSE
-  ADEMAS TAMBIEN SE HACEN OPERACIONES COMPLEMENTARIAS
-
-  LAS ALARMAS SE GUARDAN EN LAS ENTRADAS DISCRETAS DE LOS REGISTROS MODBUS
-  TIPO DE MEMORIA MODBUS 1 DESDE EL REGISTRO 0 HASTA EL REGISTRO 150 * NUMBER_OF_DSE
-  A CADA DSE LE CORRESPONDE 150 REGISTROS PARA GUARDAR SUS ALARMAS
-
-  LA CMORE UTILIZA LOS COILS PARA FUNCIONES COMPLEMENTARIAS (TIPO DE MEMORIA MODBUS 0)
 */
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -39,6 +30,22 @@
 #define UPDATE_DATE_PERIOD 1296000000 //LA FECHA DE LOS DSE SE ACTUALIZAN CADA 15 DIAS
 #define RTC_UPDATE_TIME 300000 // se actualiza el rtc cada 5 minutos
 
+//MODOS DE LECTURA
+#define READ_MASTER_AND_GEN 0
+#define READ_ONLY_MASTER 1
+#define READ_ONLY_GEN 2
+
+//macros para tipo de repeticion del schedule ( diario, mensual, semanal, o en fecha especifica)
+#define SCH_DAILY 0
+#define SCH_WEEKLY 1
+#define SCH_MONTHLY 2
+#define SCH_DATE 3
+//macros de modos
+#define SCH_TEST_OFF_LOAD false
+#define SCH_TEST_ON_LOAD true
+#define SCH_TRANSITION_OPEN false
+#define SCH_TRANSITION_CLOSED true
+
 //////////////////////////////////////////////////////
 //UTILIDADES
 //UTILIZADAS PARA INFORMACION EXTRA
@@ -49,16 +56,22 @@ TimeEvent frameEvent = TimeEvent(1000);
 bool debug = true;
 bool debugUtilidades = false;
 
-KontrolMin kontrol = KontrolMin();//KONTROL
-RTCZero rtc;//RTC
+//////////////////////////////////////////////////////
+//KONTROL
+KontrolMin kontrol = KontrolMin();
+
+//////////////////////////////////////////////////////
+//RTC
+RTCZero rtc;
 
 //////////////////////////////////////////////////////
 //TIMER UTILIZADO PARA ACTUALIZAR LA FECHA DE LOS DSE
 TimeEvent updateDateEvent = TimeEvent(UPDATE_DATE_PERIOD);
-unsigned long updateDateLastTime = 0;//variable complementaria utilizada para hacer que el boton deje de estar presionado
+
+unsigned long updateDateLastTime = 0;//variable complementaria utilizada para hacer que el boton de actualizar fecha deje de estar presionado
 bool updatingDate = false;//variable complementaria para actualizar la fecha de los DSE
 bool updateModulesDates = false;//VARIABLE QUE SE ACTIVA CUANDO SE VAYAN A ACTUALIZAR LOS MODULOS DSE
-int dseBase =0;//numero de DSe de donde se leera la fecha
+int dseBase =0;//numero de modulo DSE de donde se leera la fecha
 
 //////////////////////////////////////////////////////
 //TIMER UTILIZADO PARA LA RECONECCION DE LOS DSE CUANDO SE PIERDE LA COMUNICACION
@@ -68,6 +81,8 @@ TimeEvent dseReconnect = TimeEvent(MODBUS_RECONNECT_TIME);
 //TIMER UTILIZADO PARA LA ACTUALIZAION DEL RTC
 TimeEvent rtcUpdate = TimeEvent(10000);//Al principio el RTC trata de actualizarse cada 10 segundos luego pasa al tiempo definido por UPDATE_DATE_PERIOD
 
+//////////////////////////////////////////////////////
+//TIMER UTILIZADO PARA LA LECTURA DE LOS REGISTROS DE LOS DSE
 TimeEvent readDseTimer = TimeEvent(1000);
 
 //////////////////////////////////////////////////////
@@ -75,6 +90,8 @@ TimeEvent readDseTimer = TimeEvent(1000);
 int dseIR[NUMBER_OF_DSE][37];//alarmas leidas
 bool dseAlarms[NUMBER_OF_DSE][150];//bits de las alarmas
 bool dseErrorComm[8];//error de comunicacion
+bool oldDseErrorComm[8];//ESTADO ANTERIOR DE LOS ERRORES
+bool oldDseAlarms[NUMBER_OF_DSE][150];//ESTADO ANTERIOR DE LAS ALARMAS
 unsigned int variablesPrincipales[NUMBER_OF_DSE][20];//array para guardar valores que se presentan en la pantalla principal
 char nombres[7][12] = {//LOS NOMBRES NO PUEDEN TENER MAS DE 11 CARACTERES
   "Master SBA1",
@@ -86,32 +103,23 @@ char nombres[7][12] = {//LOS NOMBRES NO PUEDEN TENER MAS DE 11 CARACTERES
   "Gen 3"
 };
 
-bool dseInputs[8][10];
-unsigned int masterScreen[60];
-unsigned int masterActual = 0;
-bool masterButtonPress = false;
-unsigned int genActual = 1;
-unsigned int genScreen[60];
-bool genButtonPress = false;
-unsigned int busScreen[50];
-unsigned int priorityChange[4];
+//////////////////////////////////////////////////////
+//PANTALLAS
+bool dseInputs[8][10];//GUARDA EL ESTADO DE LOS BREAKERS, LA DISPONIBILIDAD, ETC.
+unsigned int masterScreen[60];//VARIABLES PARA LA PANTALLA DE MASTER
+unsigned int masterActual = 0;//MASTER DEL CUAL SE ESTA LEYENDO LOS VALORES
+bool masterButtonPress = false;//ESTADO DE BOTON DE COMANDO DE MASTER
 
+unsigned int genScreen[60];//VARIABLES PARA LA PANTALLA DE GEN
+unsigned int genActual = 1;//GEN DEL CUAL SE ESTA LEYENDO LOS VALORES
+bool genButtonPress = false;//ESTADO DE BOTON DE COMANDO DE GEN
+unsigned int priorityChange[4];//PRIORIDAD DE LOS GEN
+
+unsigned int busScreen[50];//VARIABLES PARA LA PANTALLA DE BUS
+
+//////////////////////////////////////////////////////
 //MODOS DE LECTURA PARA HACER QUE SOLO LEA MASTERS O GENERADORES
-#define READ_MASTER_AND_GEN 0
-#define READ_ONLY_MASTER 1
-#define READ_ONLY_GEN 2
-
 int modoLectura = READ_MASTER_AND_GEN;
-
-//
-// bool masterXMainAvailable = false;
-// bool masterXBusAvailable = false;
-// bool masterXLoadOn = false;
-// bool masterXMainBrk = false;
-// bool masterXBusBrk = false;
-// unsigned int masterXLLAVR = 0;
-
-
 
 //////////////////////////////////////////////////////
 //VARIABLES PARA DETERMINAR SI EL BUS ESTA CALIENTE
@@ -165,17 +173,6 @@ int client_cnt=0;//VARIABLE QUE GUARDA EL NUMERO DE CLIENTES CONECTADOS
 
 //////////////////////////////////////////////////////
 //SCHEDULE
-//macros para tipo de repeticion del schedule ( diario, mensual, semanal, o en fecha especifica)
-#define SCH_DAILY 0
-#define SCH_WEEKLY 1
-#define SCH_MONTHLY 2
-#define SCH_DATE 3
-//macros de modos
-#define SCH_TEST_OFF_LOAD false
-#define SCH_TEST_ON_LOAD true
-#define SCH_TRANSITION_OPEN false
-#define SCH_TRANSITION_CLOSED true
-
 byte schTipoRepeticion = SCH_DATE;
 bool schEnable = false;//activa el schedule
 bool schActive = false;//se activa cuando se llega a la fecha y hora establecido en el sch
@@ -195,52 +192,48 @@ unsigned int schHolding[5]={0,0,0,0,0};
 
 TimeEvent schDurationTimer = TimeEvent(5000);
 
-///////////
-//SD CARD//
-///////////
+//////////////////////////////////////////////////////
+//SD CARD
 const int chipSelect = SDCARD_SS_PIN;
 String dataWriteSD;
-char alarmLine[60];
-unsigned int tabla = 0;
-unsigned int tablaActive = 0 ;
-unsigned int monthTable = 1;
-unsigned int yearTable = 20;
 
-bool oldDseErrorComm[8];
-bool oldDseAlarms[NUMBER_OF_DSE][150];
-
-unsigned int testInt = 0;
-String testString;
+//////////////////////////////////////////////////////
+//VARIABLES PANTALLA DE ALARMA Y EVENT LOG
+char alarmLine[60];//ARRAY DE TEXTO DE ALARMAS
+unsigned int tabla = 0;//TABLA DE EVENTLOG QUE SE ESTA LEYENDO
+unsigned int tablaActive = 0 ;//TABLA DE ALARMA ACTIVA QUE SE ESTA LEYENDO
+unsigned int monthTable = 1;//MES DE LECTURA
+unsigned int yearTable = 20;//AÑO DE LECTURA
 
 
-char testArray[10];
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////SETUP////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup(){
   //////////////////////////////////////////////////////
   //UTILIDADES
-  testString.reserve(2);
-  dataWriteSD.reserve(30);
-  dataWriteSD = F("123456789012345678901234567890");
-  asignAlarm();
+  frameEvent.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
+  frameEvent.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
+
+  //////////////////////////////////////////////////////
+  //UTILIDADES
+  dataWriteSD.reserve(30);//RESERVANDO ESPACIO PARA EL STRING
+  dataWriteSD = F("123456789012345678901234567890");//INICIANDO EL STRING CON VALORES ALEATORIOS
+
+  asignAlarm();//ASINGANDO EL TEXTO DE LAS ALARMAS AL ARRAY DSEAlarmsString. FUNCION Y ARRAY DE DSEAlarms.h
 
   pinMode(LED_BUILTIN,OUTPUT);//LED FRONTAL
   pinMode(SWITCH_BUILTIN,INPUT);//SWITCH FRONTAL
   Serial.begin(115200);//COMUNICACION SERIAL
   delay(2000);//RETARDO PARA EL INICIO DEL PROGRAMA
-  frameEvent.repeat();
-  frameEvent.start();
 
-
-
-  //while(!Serial){}
-  if(debug){
-    Serial.println(F("\n**********INIT**********"));
-  }
-  SD_Begin();
+  // if(debug){
+    Serial.println(F("\n**********INIT**********"));//MARCANDO EL INICIO DEL PROGRAMA
+  // }
+  SD_Begin();//INICIANDO MICRO SD
   Serial.println(F("> Iniciando RTC"));
-  rtc.begin();
+  rtc.begin();///INICIANDO RTC
 
   //////////////////////////////////////////////////////
   //COMFIGURANDO TIMER DE ACTUALIZACION DE FECHAS
@@ -275,15 +268,15 @@ void setup(){
   //INICIANDO SERVIDOR MODBUS
   Serial.println(F("> Iniciando servidor Modbus"));
   server.begin();
-  if(!modbusTCPServer.begin() && debug){
+  if(!modbusTCPServer.begin()){//SI NO SE INICIA EL SERVIDOR MODBUS SE BLOQUEA EL PLC
     Serial.println(F("> Fallo al iniciar servidor Modbus"));
     //ACTIVAR LED DE ERROR
     while(1);
-  }else{
-    if(debug){
+  }else{//SI SE INICIA EL SERVIDOR MODBUS
+    // if(debug){
       Serial.print(F("> Servidor Modbus iniciado, IP: "));
       Serial.println(ip);
-    }
+    // }
   }
   //////////////////////////////////////////////////////
   //CONFIGURANDO REGISTROS MODBUS
@@ -298,12 +291,11 @@ void setup(){
   connectModules();
   readModuleDate();
 
-  // SD.remove("ALARMS/8_20.CSV");
-  SD.remove(F("ACTIVE.csv"));
-  dataloggerInit();
+  SD.remove(F("ACTIVE.csv"));//BORRANDO LAS ALARMAS ACTIVAS
+  dataloggerInit();//INICIANDO EL DATALOGGER
   dataWriteSD = F("PLC REINICIADO");
   datalogger();
-  dataloggerRead(rtc.getMonth(),rtc.getYear());
+  dataloggerRead(rtc.getMonth(),rtc.getYear());//LEYENDO EL DATALOGGER DEL MES Y AÑO ACTUAL
 
   Serial.println(F("> Setup finalizado"));
 
@@ -320,43 +312,48 @@ void loop(){
   generalCommonAlarm = gen1CommonAlarm || gen2CommonAlarm || gen3CommonAlarm || gen4CommonAlarm || master1CommonAlarm || master2CommonAlarm || master3CommonAlarm || master4CommonAlarm;
 
 
-  if(readDseTimer.run()){
+  if(readDseTimer.run()){//TIMER DE LECTURA DE LOS REGISTROS DE LOS DSE
     readDse();//LEYENDO LAS LOS REGISTROS DE ALARMAS DE LOS DSE
     computeDseAlarms();//SEPARANDO LAS ALARMAS QUE VIENEN EN EL MISMO REGISTRO
-    activateAlarms();
-    digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));
-}
-  unsigned int tablaServer = modbusTCPServer.holdingRegisterRead(1243);
-  unsigned int monthServer = modbusTCPServer.holdingRegisterRead(1240);
-  unsigned int yearServer = modbusTCPServer.holdingRegisterRead(1241);
+    activateAlarms();//DETERMINANDO SE SE HA ACTIVADO UNA ALARMA
+    digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));//PAPADEO DEL LED FRONTAL
+  }
 
-  if(tablaServer != tabla || monthTable != monthServer || yearTable != yearServer){
-    if(tablaServer>10000){
+  //////////////////////////////////////////////////////
+  //LOGICA PARA EL MANEJO DE LA PANTALLA DE EVENT LOG
+  unsigned int tablaServer = modbusTCPServer.holdingRegisterRead(1243);//TABLA QUE SE QUIERE MOSTRAR
+  unsigned int monthServer = modbusTCPServer.holdingRegisterRead(1240);//MES QUE SE QUIERE MOSTRAR
+  unsigned int yearServer = modbusTCPServer.holdingRegisterRead(1241);//AÑO QUE SE QUIERE MOSTRAR
+
+  if(tablaServer != tabla || monthTable != monthServer || yearTable != yearServer){//SI CAMBIA EL MES, EL AÑO O LA TABLA QUE SE ESTA MOSTRANDO
+    if(tablaServer>10000){//LIMITANDO EL NUMERO DE TABLA
       tablaServer = 0;
     }
+    //CAMBIANDO A LOS NUEVOS VALORES QUE SE QUIEREN MOSTRAR
     monthTable = monthServer;
     yearTable = yearServer;
     tabla = tablaServer;
-    modbusTCPServer.holdingRegisterWrite(1243,tabla);
-    dataloggerRead(monthTable,yearTable);
+    modbusTCPServer.holdingRegisterWrite(1243,tabla);//ESCRIBIENDO EN EL REGISTRO EL NUEVO NUMERO DE TABLA QUE SE ESTA MOSTRANDO
+    dataloggerRead(monthTable,yearTable);//MOSTRANDO EL EVENTLOG
   }
 
-  tablaServer = modbusTCPServer.holdingRegisterRead(1563);
-  if(tablaServer != tablaActive){
-    if(tablaServer>10000){
+  //////////////////////////////////////////////////////
+  //LOGICA PARA EL MANEJO DE LA PANTALLA DE ALARMAS ACTIVAS
+  tablaServer = modbusTCPServer.holdingRegisterRead(1563);//TABLA QUE SE QUIERE MOSTRAR
+  if(tablaServer != tablaActive){//SI CAMBIA LA TABLA QUE SE ESTA MOSTRANDO
+    if(tablaServer>10000){//LIMITANDO
       tablaServer = 0;
     }
     tablaActive = tablaServer;
-    modbusTCPServer.holdingRegisterWrite(1563,tablaActive);
-    alarmsLoggerRead();
+    modbusTCPServer.holdingRegisterWrite(1563,tablaActive);//ESCRIBIENDO EN EL REGISTRO EL NUEVO NUMERO DE TABLA QUE SE ESTA MOSTRANDO
+    alarmsLoggerRead();//MOSTRANDO LAS ALARMAS ACTIVAS
   }
 
+  //////////////////////////////////////////////////////
+  //MANEJANDO LOS CLIENTES
+  handleModbusClients();
 
-
-  handleModbusClients();//MANEJANDO LOS CLIENTES
-
-
-
+  //////////////////////////////////////////////////////
   //KONTROL
   if(Serial.available()>0){
     kontrol.update(Serial.read());
@@ -370,18 +367,18 @@ void loop(){
   kontrol.addListener(F("readmode"),modoLecturaCallback);
   kontrol.addListener(F("test"),testCallback);
 
+  //////////////////////////////////////////////////////
   //TIMER DE RECONEXION
   if(dseReconnect.run()){
-    //Serial.println(F("> Reconexion Timer"));
     for(int i=0; i<NUMBER_OF_DSE; i++){
-      //SE DESACTIVA EL ERROR DE CONEXION Y SE INTENTA LA CONEXION
-      dseErrorComm[i]=false;
+      dseErrorComm[i]=false;//SE DESACTIVA EL ERROR DE CONEXION Y SE INTENTA LA CONEXION
     }
     connectModules();
   }
 
-  //TIMER DE ACTUALIZACION DE FECHA DE LOS MODULOS
-  if(updateDateEvent.run()){
+  //////////////////////////////////////////////////////
+  //ACTUALIZANDO LA FECHA DE LOS MODULOS Y DEL PLC
+  if(updateDateEvent.run()){//TIMER DE ACTUALIZACION DE FECHA DE LOS MODULOS
     updateModulesDates = true;
   }
   if(updateModulesDates && !updatingDate){
@@ -390,7 +387,6 @@ void loop(){
     updatingDate = true;
     updateDateLastTime = millis();
   }
-
   if(updatingDate && (millis() > (updateDateLastTime + 1000))){
     updateModulesDates = false;
     updatingDate =false;
@@ -398,10 +394,13 @@ void loop(){
     Serial.println(F("> Fecha de modulos actualizadas"));
   }
 
-  if(rtcUpdate.run()){
+  //////////////////////////////////////////////////////
+  if(rtcUpdate.run()){//TIMER DE ACTUALIZACION DE RTC
     readModuleDate();
   }
 
+  //////////////////////////////////////////////////////
+  //LOGICA DEL SCHEDULE
   computeSchRegisters();
   if(schDurationTimer.run()){
     schActive = false;
@@ -409,16 +408,14 @@ void loop(){
     Serial.println(F("> Schedule desactivado"));
   }
 
+  //////////////////////////////////////////////////////
   //ACTUALIZANDO LOS REGISTROS MODBUS
   writeModbusCoils();
   writeModbusDiscreteInputs();
   writeModbusInputRegisters();
   writeModbusHoldingRegisters();
 
-
-
   /////////////////////////////
   //UTILIDADES
   utilidades();
-
 }//FIN LOOP
