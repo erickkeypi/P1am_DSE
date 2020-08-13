@@ -933,7 +933,7 @@ void computeSchRegisters(){//FUNCION QUE HACE LOS CALCULOS DEL SCHEDULE
 
 
 ////MODBUS
-void readModbusCoils(){
+void readModbusCoils(){//FUNCION QUE LEE LOS COILS
   updateModulesDates = modbusTCPServer.coilRead(0);
   masterButtonPress = modbusTCPServer.coilRead(1);
   genButtonPress = modbusTCPServer.coilRead(2);
@@ -953,7 +953,7 @@ void readModbusCoils(){
   }
 }
 
-void writeModbusCoils(){
+void writeModbusCoils(){//FUNCION QUE ESCRIBE LOS COILS
   modbusTCPServer.coilWrite(0,updateModulesDates);
   modbusTCPServer.coilWrite(1,masterButtonPress);
   modbusTCPServer.coilWrite(2,genButtonPress);
@@ -969,7 +969,7 @@ void writeModbusCoils(){
   }
 }
 
-void writeModbusDiscreteInputs() {
+void writeModbusDiscreteInputs() {//FUNCION QUE ESCRIBE LAS ENTRADAS DISCRETAS
   for(int i=0;i<NUMBER_OF_DSE;i++){
     for(int j=0;j<10;j++){
       modbusTCPServer.discreteInputWrite((i*10)+j,dseInputs[i][j]);
@@ -980,7 +980,7 @@ void writeModbusDiscreteInputs() {
   }
 }
 
-void writeModbusInputRegisters() {
+void writeModbusInputRegisters() {//FUNCION QUE ESCRIBE LOS INPUTS
   for (int i=0;i<NUMBER_OF_DSE;i++){
     for(int j=0;j<37;j++){
     //modbusTCPServer.inputRegisterWrite((i*37)+j,dseIR[i][j]);
@@ -988,9 +988,9 @@ void writeModbusInputRegisters() {
   }
 }
 
-void readModbusHoldingRegisters(){
-  //leyendo registros del schedule
-  for(int i=0;i<5;i++){
+void readModbusHoldingRegisters(){//FUNCION QUE LEE LOS HOLDING
+
+  for(int i=0;i<5;i++){//leyendo registros del schedule
     schHolding[i]= modbusTCPServer.holdingRegisterRead(i+10);
   }
   masterActual = modbusTCPServer.holdingRegisterRead(499);
@@ -999,17 +999,20 @@ void readModbusHoldingRegisters(){
   genActual = modbusTCPServer.holdingRegisterRead(599);
   genScreen[54]= modbusTCPServer.holdingRegisterRead(654);
   genScreen[55]= modbusTCPServer.holdingRegisterRead(655);
-  if(masterActual != 0 && masterActual != 2 && masterActual != 3 && masterActual != 4){
+
+  if(masterActual != 0 && masterActual != 2 && masterActual != 3 && masterActual != 4){//ASEGURANDO QUE EL MASTER ACTUAL SEA UNO CORRECTO
     masterActual=0;
   }
-  if(genActual != 1 && genActual != 5 && genActual !=6){
+
+  if(genActual != 1 && genActual != 5 && genActual !=6){//ASEGURANDO QUE EL GEN ACTUAL SEA UNO CORRECTO
     genActual=1;
   }
 
+  //CAMBIO DE PRIORIDAD
   if(modoLectura == READ_MASTER_AND_GEN || modoLectura == READ_ONLY_GEN){
     if(!dseErrorComm[1]){//cambiando prioridad gen 1
       busScreen[33] = constrain(modbusTCPServer.holdingRegisterRead(733),1,32);
-      if(modbusTCPClient[1].holdingRegisterRead(35104) != busScreen[33]){
+      if(modbusTCPClient[1].holdingRegisterRead(35104) != busScreen[33]){//SI LA PRIORIDAD ES DIFERENTE ENTONES SE CAMBIA
         if(modbusTCPClient[1].beginTransmission(HOLDING_REGISTERS,35104,1)){
           modbusTCPClient[1].write(busScreen[33]);
           modbusTCPClient[1].endTransmission();
@@ -1018,7 +1021,7 @@ void readModbusHoldingRegisters(){
     }
     if(!dseErrorComm[5]){//cambiando prioridad gen 2
       busScreen[34] = constrain(modbusTCPServer.holdingRegisterRead(734),1,32);
-      if(modbusTCPClient[5].holdingRegisterRead(35104) != busScreen[34]){
+      if(modbusTCPClient[5].holdingRegisterRead(35104) != busScreen[34]){//SI LA PRIORIDAD ES DIFERENTE ENTONES SE CAMBIA
         if(modbusTCPClient[5].beginTransmission(HOLDING_REGISTERS,35104,1)){
           modbusTCPClient[5].write(busScreen[34]);
           modbusTCPClient[5].endTransmission();
@@ -1027,7 +1030,7 @@ void readModbusHoldingRegisters(){
     }
     if(!dseErrorComm[6]){//cambiando prioridad gen 3
       busScreen[35] = constrain(modbusTCPServer.holdingRegisterRead(735),1,32);
-      if(modbusTCPClient[6].holdingRegisterRead(35104) != busScreen[35]){
+      if(modbusTCPClient[6].holdingRegisterRead(35104) != busScreen[35]){//SI LA PRIORIDAD ES DIFERENTE ENTONES SE CAMBIA
         if(modbusTCPClient[6].beginTransmission(HOLDING_REGISTERS,35104,1)){
           modbusTCPClient[6].write(busScreen[35]);
           modbusTCPClient[6].endTransmission();
@@ -1037,12 +1040,12 @@ void readModbusHoldingRegisters(){
   }
 }
 
-void writeModbusHoldingRegisters(){
+void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
   //escribiendo registros del schedule
   for(int i=0;i<5;i++){
     modbusTCPServer.holdingRegisterWrite(i+10,schHolding[i]);
   }
-
+  //ESCRIBIENDO REGISTROS DE LA PANTALLA PRINCIPAL
   for(int i=0;i<NUMBER_OF_DSE;i++){
     for (int j =0;j<20;j++){
       modbusTCPServer.holdingRegisterWrite(100+(i*20)+j,variablesPrincipales[i][j]);
@@ -1060,14 +1063,15 @@ void writeModbusHoldingRegisters(){
   for(int i=0;i<50;i++){//escribiendo los registros para la pantalla de generador
     modbusTCPServer.holdingRegisterWrite(700+i,busScreen[i]);
   }
-  // modbusTCPClient[1].holdingRegisterWrite(35104,2);//priority
+
+  //RESTRINGIENDO EL VALOR DEL MES A MOSTRAR EN EL EVENT LOG
   unsigned int monthServer = modbusTCPServer.holdingRegisterRead(1240);
   unsigned int yearServer = modbusTCPServer.holdingRegisterRead(1241);
-  if(monthServer>12){
+  if(monthServer>12){//SI SE AUMENTA EL MES 12 ENTONCES SE SUMA UN AÑO
     monthServer =1;
     yearServer++;
   }
-  if(monthServer<1){
+  if(monthServer<1){//SI SE DISMINUYE EL MES 1 ENTONCES SE RESTA UN AÑO
     monthServer =12;
     yearServer--;
   }
@@ -1079,28 +1083,26 @@ void writeModbusHoldingRegisters(){
 
 
 void utilidades(){
-  //updating frame
+  //CALCULANDO EL TIEMPO DE EJECUCION DE UN CICLO DE PROGRAMA (FRAME)
   frame = micros() - beforeFrame;
   beforeFrame = micros();
-  //printing frame time and memory usage
+
   if(frameEvent.run() && debugUtilidades){
-    modoLecturaCallback();
+
+    modoLecturaCallback();//IMPRIMIENDO EL MODO DE LECTURA
+
+    //IMPRIMIENDO EL TIEMPO DE FRAME
     Serial.print(F("> Frame time(us): "));
     Serial.println(frame);
+
+    //IMPRIMIENDO LA MEMORIA DISPONIBLE
     printMemory();
-    Serial.print(F("> DSE comm error: "));
-    for(int i=0; i<NUMBER_OF_DSE;i++){
-      Serial.print(dseErrorComm[i]);
-      Serial.print(F(" "));
-    }
-    Serial.println();
 
     Serial.println();
-    // modbusTCPClient[1].holdingRegisterWrite(35104,2);//priority
   }
 }
 
-void printMemory(){
+void printMemory(){//FUNCION QUE IMPRIME POR SERIAL LA MEMORIA DISPONIBLE
   Serial.print(F("> MEM FREE: "));
   Serial.print(freeMemory(), DEC);
   Serial.print(", ");
@@ -1110,10 +1112,6 @@ void printMemory(){
   Serial.println("%");
 }
 
-void test(){
-  for (int i=0;i<NUMBER_OF_DSE;i++){
-    for(int j=0;j<37;j++){
-      dseIR[i][j]=12657;
-    }
-  }
+void test(){//FUNCION DE PRUEBA
+
 }
