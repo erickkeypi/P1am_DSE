@@ -358,14 +358,14 @@ void loop(){
   if(Serial.available()>0){
     kontrol.update(Serial.read());
   }
-  kontrol.addListener(F("ok"),okCallback);
-  kontrol.addListener(F("help"),helpCall);
-  kontrol.addListener(F("updatedate"),updateDateCallback);
-  kontrol.addListener(F("debug"),debugCallback);
-  kontrol.addListener(F("connectmodules"),connectModules);
-  kontrol.addListener(F("printmemory"),printMemory);
-  kontrol.addListener(F("readmode"),modoLecturaCallback);
-  kontrol.addListener(F("test"),testCallback);
+  kontrol.addListener("ok",okCallback);
+  kontrol.addListener("help",helpCall);
+  kontrol.addListener("updatedate",updateDateCallback);
+  kontrol.addListener("debug",debugCallback);
+  kontrol.addListener("connectmodules",connectModules);
+  kontrol.addListener("printmemory",printMemory);
+  kontrol.addListener("readmode",modoLecturaCallback);
+  kontrol.addListener("test",testCallback);
 
   //////////////////////////////////////////////////////
   //TIMER DE RECONEXION
