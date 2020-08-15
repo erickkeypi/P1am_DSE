@@ -661,6 +661,22 @@ void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUA
     //LUEGO SE VUELVE A BUSCAR LAS ALARMAS ACTIVAS Y SE GUARDAN
     SD.remove(F("ACTIVE.csv"));
     for(int i=0;i<8;i++){//BUSCANDO ALARMAS DE ERROR DE CONEXION
+      switch (modoLectura) {
+        case READ_ONLY_GEN:
+        if(i==0 || i==2 || i==3 || i==4){//saltando los master
+          continue;
+        }
+        break;
+
+        case READ_ONLY_MASTER:
+        if(i==1 || i==5 || i==6 || i==7){//saltando los gen
+          continue;
+        }
+        break;
+
+        case READ_MASTER_AND_GEN:
+        break;
+      }
       if(oldDseErrorComm[i]){
         dataWriteSD = nombres[i];
         dataWriteSD += F(" COMM ERROR");
@@ -668,6 +684,22 @@ void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUA
       }
     }
     for(int i=0;i<NUMBER_OF_DSE;i++){//BUSCANDO ALARMAS DE LOS DSE
+      switch (modoLectura) {
+        case READ_ONLY_GEN:
+        if(i==0 || i==2 || i==3 || i==4){//saltando los master
+          continue;
+        }
+        break;
+
+        case READ_ONLY_MASTER:
+        if(i==1 || i==5 || i==6 || i==7){//saltando los gen
+          continue;
+        }
+        break;
+
+        case READ_MASTER_AND_GEN:
+        break;
+      }
       for (int j=0;j<150;j++){
         if(oldDseAlarms[i][j]){
           dataWriteSD = nombres[i];
@@ -681,6 +713,22 @@ void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUA
   }
 
   for(int i=0;i<8;i++){//REVISANDO SI SE DESACTIVA UNA ALARMA DE ERROR DE CONEXION
+    switch (modoLectura) {
+      case READ_ONLY_GEN:
+      if(i==0 || i==2 || i==3 || i==4){//saltando los master
+        continue;
+      }
+      break;
+
+      case READ_ONLY_MASTER:
+      if(i==1 || i==5 || i==6 || i==7){//saltando los gen
+        continue;
+      }
+      break;
+
+      case READ_MASTER_AND_GEN:
+      break;
+    }
     if(oldDseErrorComm[i] && !dseErrorComm[i]){
       alarmaDesactivada =true;
       break;
@@ -688,6 +736,22 @@ void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUA
   }
 
   for(int i=0;i<NUMBER_OF_DSE;i++){//REVISANDO SI SE DESACTIVA UNA ALARMA DE UN DSE
+    switch (modoLectura) {
+      case READ_ONLY_GEN:
+      if(i==0 || i==2 || i==3 || i==4){//saltando los master
+        continue;
+      }
+      break;
+
+      case READ_ONLY_MASTER:
+      if(i==1 || i==5 || i==6 || i==7){//saltando los gen
+        continue;
+      }
+      break;
+
+      case READ_MASTER_AND_GEN:
+      break;
+    }
     for (int j=0;j<150;j++){
       if(oldDseAlarms[i][j] && !dseAlarms[i][j]){
         alarmaDesactivada =true;
@@ -700,6 +764,22 @@ void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUA
   }
 
   for(int i=0;i<8;i++){//REVISANDO SI SE ACTIVA UNA ALARMA DE ERROR DE CONEXION
+    switch (modoLectura) {
+      case READ_ONLY_GEN:
+      if(i==0 || i==2 || i==3 || i==4){//saltando los master
+        continue;
+      }
+      break;
+
+      case READ_ONLY_MASTER:
+      if(i==1 || i==5 || i==6 || i==7){//saltando los gen
+        continue;
+      }
+      break;
+
+      case READ_MASTER_AND_GEN:
+      break;
+    }
     if(!oldDseErrorComm[i] && dseErrorComm[i]){
       dataWriteSD = nombres[i];
       dataWriteSD += F(" COMM ERROR");
@@ -710,6 +790,22 @@ void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUA
   }
 
   for(int i=0;i<NUMBER_OF_DSE;i++){//REVISANDO SI SE ACTIVA UNA ALARMA DE DSE
+    switch (modoLectura) {
+      case READ_ONLY_GEN:
+      if(i==0 || i==2 || i==3 || i==4){//saltando los master
+        continue;
+      }
+      break;
+
+      case READ_ONLY_MASTER:
+      if(i==1 || i==5 || i==6 || i==7){//saltando los gen
+        continue;
+      }
+      break;
+
+      case READ_MASTER_AND_GEN:
+      break;
+    }
     for (int j=0;j<150;j++){
       if(!oldDseAlarms[i][j] && dseAlarms[i][j]){
         dataWriteSD = nombres[i];

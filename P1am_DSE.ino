@@ -296,7 +296,8 @@ void setup(){
   dataWriteSD = F("PLC REINICIADO");
   datalogger();
   dataloggerRead(rtc.getMonth(),rtc.getYear());//LEYENDO EL DATALOGGER DEL MES Y AÑO ACTUAL
-
+  modbusTCPServer.holdingRegisterWrite(1240,rtc.getMonth());
+  modbusTCPServer.holdingRegisterWrite(1241,rtc.getYear());
   Serial.println(F("> Setup finalizado"));
 
 }//FIN SETUP

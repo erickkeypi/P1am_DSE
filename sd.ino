@@ -82,7 +82,7 @@ void alarmsLoggerRead(){//FUNCION PARA ESCRIBIR POR MODBUS LAS ALARMAS ACTIVAS
         index++;
       }
 
-      writeAlarmsLineModbus(linea-(tabla*10),1300);//LLAMANDO LA FUNCION PARA UNA LINEA COMPLETA EN LOS REGISTROS MODBUS
+      writeAlarmsLineModbus(linea-(tablaActive*10),1300);//LLAMANDO LA FUNCION PARA UNA LINEA COMPLETA EN LOS REGISTROS MODBUS
       linea ++;
 
       if(linea >= (tablaActive+1)*10){//SE SALE DEL BUQULE SI LA LINEA SE PASA DE LA TABLA A MOSTRAR
