@@ -307,7 +307,7 @@ void readDse(){//esta funcion lee los registros de alarma de los DSE
     genScreen[27] = modbusTCPClient[genActual].holdingRegisterRead(1046);//gen l3-l1
     genScreen[28] = modbusTCPClient[genActual].holdingRegisterRead(1049);//gen l3-l1
     genScreen[29] = modbusTCPClient[genActual].holdingRegisterRead(1048);//gen l3-l1
-    genScreen[30] = modbusTCPClient[genActual].holdingRegisterRead(1074);//pf
+    genScreen[30] = modbusTCPClient[genActual].holdingRegisterRead(1557);//pf
     genScreen[31] = modbusTCPClient[genActual].holdingRegisterRead(1545);//kva
     genScreen[32] = modbusTCPClient[genActual].holdingRegisterRead(1544);//kva
     genScreen[33] = modbusTCPClient[genActual].holdingRegisterRead(1553);//kvar
