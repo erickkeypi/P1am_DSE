@@ -113,23 +113,15 @@ bool genButtonPress = false;//ESTADO DE BOTON DE COMANDO DE GEN
 //////////////////////////////////////////////////////
 //MODOS DE LECTURA PARA HACER QUE SOLO LEA MASTERS O GENERADORES
 int modoLectura = READ_MASTER_AND_GEN;
-//
-// //////////////////////////////////////////////////////
-// //VARIABLES PARA DETERMINAR SI EL BUS ESTA CALIENTE
-// bool busLive = false;
-//
-// //////////////////////////////////////////////////////
-// //VARIABLES PARA DETERMINAR LA ALARMA COMUN GENERAL
-// bool generalCommonAlarm = false;
-// bool gen1CommonAlarm =false;
-// bool gen2CommonAlarm =false;
-// bool gen3CommonAlarm =false;
-// bool gen4CommonAlarm =false;
-// bool master1CommonAlarm = false;
-// bool master2CommonAlarm = false;
-// bool master3CommonAlarm = false;
-// bool master4CommonAlarm = false;
-//
+
+//////////////////////////////////////////////////////
+//VARIABLES PARA DETERMINAR SI EL BUS ESTA CALIENTE
+bool busLive = false;
+
+//////////////////////////////////////////////////////
+//VARIABLES PARA DETERMINAR LA ALARMA COMUN GENERAL
+bool generalCommonAlarm = false;
+
 //////////////////////////////////////////////////////
 //CONFIGURACION ETHERNET-MODBUS
 byte mac[] = {0x60, 0x52, 0xD0, 0x06, 0x68, 0x98};//P1AM-ETH MAC
@@ -290,13 +282,20 @@ void setup(){
 ////////////////////////////////////////////////////LOOP////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void loop(){
-  //
-  // //LOGICA PARA BUS LIVE Y LA ALARMA COMUN GENERAL
-  // //para los master se toma dseInputs[d][1] y para los gen dseInputs[d][2]
-  // busLive = dseInputs[0][1] || dseInputs[1][2] || dseInputs[2][1] || dseInputs[3][1] || dseInputs[4][1] || dseInputs[5][2] || dseInputs[6][2] || dseInputs[7][2];
-  // generalCommonAlarm = gen1CommonAlarm || gen2CommonAlarm || gen3CommonAlarm || gen4CommonAlarm || master1CommonAlarm || master2CommonAlarm || master3CommonAlarm || master4CommonAlarm;
-  //
-  //
+
+  //LOGICA PARA BUS LIVE Y LA ALARMA COMUN GENERAL
+  for (int i=0;i<NUMBER_OF_DSE;i++){
+    busLive = generalCommonAlarm = false;
+    if(modulos[i].model == DSE_8660MKII){
+      busLive |= modulos[i].busAvailable;
+    }
+    else if(modulos[i].model == DSE_8610MKII){
+      busLive |= modulos[i].genBrk;
+    }
+    generalCommonAlarm |= modulos[i].commonAlarm;
+  }
+
+
   if(readDseTimer.run()){//TIMER DE LECTURA DE LOS REGISTROS DE LOS DSE
     applyReadMode();
     readDse();//LEYENDO LAS LOS REGISTROS DE LOS DSE
@@ -390,10 +389,10 @@ void loop(){
   //   schDurationTimer.stop();
   //   Serial.println(F("> Schedule desactivado"));
   // }
-  //
-  // //////////////////////////////////////////////////////
-  // //ACTUALIZANDO LOS REGISTROS MODBUS
-  // writeModbusCoils();
+
+  //////////////////////////////////////////////////////
+  //ACTUALIZANDO LOS REGISTROS MODBUS
+  writeModbusCoils();
   writeModbusDiscreteInputs();
   // writeModbusInputRegisters();
   writeModbusHoldingRegisters();
