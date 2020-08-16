@@ -175,8 +175,8 @@ DSE modulos[NUMBER_OF_DSE] = {
   DSE(DSE_8660MKII, IPAddress(192, 168, 137,  126), "SBA2"),
   DSE(DSE_8660MKII, IPAddress(192, 168, 137,  126), "SBB1"),
   DSE(DSE_8660MKII, IPAddress(192, 168, 137,  126), "SBB2"),
-  DSE(DSE_8610MKII, IPAddress(192, 168, 137,  128), "Gen 2"),
-  DSE(DSE_8610MKII, IPAddress(192, 168, 137,  128), "Gen 3")
+  DSE(DSE_8610MKII, IPAddress(192, 168, 137,  127), "Gen 2"),
+  DSE(DSE_8610MKII, IPAddress(192, 168, 137,  127), "Gen 3")
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

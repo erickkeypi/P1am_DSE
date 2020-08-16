@@ -130,6 +130,35 @@ void readDse(){//esta funcion lee los registros de los DSE
         modbusTCPServer.coilWrite(2,masterButtonPress);
       }
 
+      //CAMBIO DE PRIORIDAD
+      if(modoLectura == READ_MASTER_AND_GEN || modoLectura == READ_ONLY_GEN){
+        if(modulos[i].model == DSE_8610MKII){//cambiando prioridad gen
+          unsigned int add=0;
+          switch(i){
+            case 1:
+            add=733;
+            break;
+
+            case 5:
+            add=734;
+            break;
+
+            case 6:
+            add=735;
+            break;
+          }
+          unsigned int newPriority = constrain(modbusTCPServer.holdingRegisterRead(add),1,32);
+          if(modulos[i].priority != newPriority){//SI LA PRIORIDAD ES DIFERENTE ENTONES SE CAMBIA
+            if(modulos[i].beginTransmission(35104,1)){
+              modulos[i].modbusWrite(newPriority);
+              modulos[i].endTransmission();
+              modulos[i].priority = newPriority;
+            }
+          }
+          modbusTCPServer.holdingRegisterWrite(add,modulos[i].priority);
+        }
+      }
+
       modulos[i].stop();
       writeStringToRegisters(modulos[i].getName(),109+(i*20),6);
     }
@@ -141,32 +170,7 @@ void readDse(){//esta funcion lee los registros de los DSE
     }
   }
 }
-//
-// void computeDseAlarms(){//esta funcion separa las 4 alarmas que vienen dentro del mismo registro
-//   //cada alarma es de 4 bits y solo se busca que este entre los valores de 2 a 4
-//   for(int i=0;i<NUMBER_OF_DSE;i++){
-//     for(int j=0;j<37;j++){
-//       //SEPARANDO
-//       int a1 = dseIR[i][j]&0b00001111;
-//       int a2 = (dseIR[i][j]>>4)&0b00001111;
-//       int a3 = (dseIR[i][j]>>8)&0b00001111;
-//       int a4 = (dseIR[i][j]>>12)&0b00001111;
-//       //DETECTANDO SI EL VALOR ESTA ENTRE 2 Y 4
-//       dseAlarms[i][j*4]=a1<=4 && a1>=2;
-//       dseAlarms[i][(j*4)+1]=a2<=4 && a2>=2;
-//       dseAlarms[i][(j*4)+2]=a3<=4 && a3>=2;
-//       dseAlarms[i][(j*4)+3]=a4<=4 && a4>=2;
-//     }
-//   }
-// }
-//
-// void limpiarAlarma(int modulo){//FUNCION QUE LIMPIA LAS ALARMAS
-//   for(int j=0;j<150;j++){
-//     dseAlarms[modulo][j]=0;
-//   }
-// }
-//
-//
+
 // void readModuleDate(){//FUNCION QUE LEE LA FECHA DEL MODULO ELEGIDO COMO BASE
 //
 //   switch (modoLectura) {//EL MODULO BASE CAMBIA DE ACUERDO AL MODO DE LECTURA
@@ -810,37 +814,6 @@ void readModbusServerHoldingRegisters(){//FUNCION QUE LEE LOS HOLDING
   if(genActual != 1 && genActual != 5 && genActual !=6){//ASEGURANDO QUE EL GEN ACTUAL SEA UNO CORRECTO
     genActual=1;
   }
-
-  // //CAMBIO DE PRIORIDAD
-  // if(modoLectura == READ_MASTER_AND_GEN || modoLectura == READ_ONLY_GEN){
-  //   if(!dseErrorComm[1]){//cambiando prioridad gen 1
-  //     busScreen[33] = constrain(modbusTCPServer.holdingRegisterRead(733),1,32);
-  //     if(modbusTCPClient[1].holdingRegisterRead(35104) != busScreen[33]){//SI LA PRIORIDAD ES DIFERENTE ENTONES SE CAMBIA
-  //       if(modbusTCPClient[1].beginTransmission(HOLDING_REGISTERS,35104,1)){
-  //         modbusTCPClient[1].write(busScreen[33]);
-  //         modbusTCPClient[1].endTransmission();
-  //       }
-  //     }
-  //   }
-  //   if(!dseErrorComm[5]){//cambiando prioridad gen 2
-  //     busScreen[34] = constrain(modbusTCPServer.holdingRegisterRead(734),1,32);
-  //     if(modbusTCPClient[5].holdingRegisterRead(35104) != busScreen[34]){//SI LA PRIORIDAD ES DIFERENTE ENTONES SE CAMBIA
-  //       if(modbusTCPClient[5].beginTransmission(HOLDING_REGISTERS,35104,1)){
-  //         modbusTCPClient[5].write(busScreen[34]);
-  //         modbusTCPClient[5].endTransmission();
-  //       }
-  //     }
-  //   }
-  //   if(!dseErrorComm[6]){//cambiando prioridad gen 3
-  //     busScreen[35] = constrain(modbusTCPServer.holdingRegisterRead(735),1,32);
-  //     if(modbusTCPClient[6].holdingRegisterRead(35104) != busScreen[35]){//SI LA PRIORIDAD ES DIFERENTE ENTONES SE CAMBIA
-  //       if(modbusTCPClient[6].beginTransmission(HOLDING_REGISTERS,35104,1)){
-  //         modbusTCPClient[6].write(busScreen[35]);
-  //         modbusTCPClient[6].endTransmission();
-  //       }
-  //     }
-  //   }
-  // }
 }
 //
 void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
@@ -983,7 +956,7 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
   //ESCRIBIENDO REGISTROS DE LA PANTALLA DE BUS
   //PANTALLA DE BUS. SOLO SALE DE LOS GEN
   if(modoLectura == READ_ONLY_GEN|| modoLectura == READ_MASTER_AND_GEN){
-    for(int i=0;i<0;i++){
+    for(int i=0;i<31;i++){
         modbusTCPServer.holdingRegisterWrite(700+i,0);
     }
 
@@ -1054,15 +1027,15 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
     }
     // PRIORIDAD Y QUALITY
     if(!dseErrorComm[1]){
-      modbusTCPServer.holdingRegisterWrite(733,modulos[1].priority);
+      // modbusTCPServer.holdingRegisterWrite(733,modulos[1].priority);
       modbusTCPServer.holdingRegisterWrite(737,modulos[1].qualityMSC);
     }
     if(!dseErrorComm[5]){
-      modbusTCPServer.holdingRegisterWrite(734,modulos[5].priority);
+      // modbusTCPServer.holdingRegisterWrite(734,modulos[5].priority);
       modbusTCPServer.holdingRegisterWrite(738,modulos[5].qualityMSC);
     }
     if(!dseErrorComm[6]){
-      modbusTCPServer.holdingRegisterWrite(735,modulos[6].priority);
+      // modbusTCPServer.holdingRegisterWrite(735,modulos[6].priority);
       modbusTCPServer.holdingRegisterWrite(739,modulos[6].qualityMSC);
     }
   }
