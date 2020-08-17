@@ -17,7 +17,7 @@
 #include <RTCZero.h>
 #include <MemoryFree.h>
 #include <KontrolMin.h>
-#include <StateMachine.h>
+// #include <StateMachine.h>
 #include <SD.h>
 #include "DSEAlarms.h"
 #include <DSE.h>
@@ -291,10 +291,10 @@ void loop(){
     //////////////////////////////////////////////////////
     //TIMER DE RECONEXION
     if(dseReconnect.run()){
-      eraseErrorComm();
+      eraseErrorComm();//QUITANDO LOS ERRORES DE CONEXION PARA PERMITIR LA RECONEXION
     }
 
-    applyReadMode();
+    applyReadMode();//APLICANDO MODO DE LECTURA SEGUN LA VARIABLE "modoLectura"
     readDse();//LEYENDO LAS LOS REGISTROS DE LOS DSE
     activateAlarms();//REVISANDO LAS ALARMAS PARA AGREGARLAS AL DATALOGGER
     digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));//PAPADEO DEL LED FRONTAL
