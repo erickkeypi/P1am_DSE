@@ -8,6 +8,7 @@
 
 //////////////////////////////////////////////////////
 //LIBRERIAS
+#include <SDU.h>
 #include <P1AM.h>
 #include <ArduinoRS485.h>
 #include <ArduinoModbus.h>
@@ -197,6 +198,7 @@ void setup(){
   delay(2000);//RETARDO PARA EL INICIO DEL PROGRAMA
 
   Serial.println(F("\n**********INIT**********"));//MARCANDO EL INICIO DEL PROGRAMA
+  Serial.println(F("**< SDU compatible >**"));
 
   SD_Begin();//INICIANDO MICRO SD
   Serial.println(F("> Iniciando RTC"));
