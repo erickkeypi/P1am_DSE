@@ -198,7 +198,7 @@ void setup(){
   delay(2000);//RETARDO PARA EL INICIO DEL PROGRAMA
 
   Serial.println(F("\n**********INIT**********"));//MARCANDO EL INICIO DEL PROGRAMA
-  Serial.println(F("**< SDU compatible >**"));
+  // Serial.println(F("**< SDU compatible >**"));
 
   SD_Begin();//INICIANDO MICRO SD
   Serial.println(F("> Iniciando RTC"));
@@ -217,7 +217,7 @@ void setup(){
   //////////////////////////////////////////////////////
   //CONFIGURANDO TIMER DE RECONECCION
   dseReconnect.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
-  dseReconnect.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
+  // dseReconnect.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
 
   //////////////////////////////////////////////////////
   //CONFIGURANDO TIMER DE RTC
@@ -291,8 +291,23 @@ void loop(){
   //TIMER DE LECTURA DE LOS REGISTROS DE LOS DSE
   if(readDseTimer.run()){
     //////////////////////////////////////////////////////
-    //TIMER DE RECONEXION
-    if(dseReconnect.run()){
+    //LOGICA DE RECONEXION
+    bool errorComm = false;
+    for (int i=0;i<NUMBER_OF_DSE;i++){//determinando si hay algun error de conexion
+      if(dseErrorComm[i]){
+        errorComm = true;
+        break;
+      }
+    }
+
+    if(errorComm){// si hay un error de conexion se empieza a contar el tiempo de reconexion
+      dseReconnect.start();
+    } else {// si no hay error de conexion se detiene la cuenta
+      dseReconnect.stop();
+    }
+
+    if(dseReconnect.run()){//timer de reconexion
+      Serial.println(F("> Reconexion"));
       eraseErrorComm();//QUITANDO LOS ERRORES DE CONEXION PARA PERMITIR LA RECONEXION
     }
 
