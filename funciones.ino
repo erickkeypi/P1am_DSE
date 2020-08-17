@@ -1,12 +1,12 @@
 void initializeArrays(){//FUNCION QUE INICIALIZA LOS ARRAYS
-  if(debug){Serial.println(F("> Arrays inicializados"));}
-    eraseErrorComm();
-    for(int i=0;i<NUMBER_OF_DSE;i++){
-      oldDseErrorComm[i]=false;
-      for(int j=0;j<150;j++){
-        oldDseAlarms[i][j] =false;
-      }
+  Serial.println(F("> Arrays inicializados"));
+  eraseErrorComm();
+  for(int i=0;i<NUMBER_OF_DSE;i++){
+    oldDseErrorComm[i]=false;
+    for(int j=0;j<150;j++){
+      oldDseAlarms[i][j] =false;
     }
+  }
 }
 
 void eraseErrorComm(){
@@ -48,12 +48,10 @@ void handleModbusClients(){//funcion que maneja la conexion de los clientes
     if (!clients[i]) {
       clients[i] = newClient;
       client_cnt++;
-      if(debug){
-        Serial.print(F("> Cliente Modbus conectado: ")); //a new client connected
-        Serial.print(newClient.remoteIP());
-        Serial.print(" , Total:");
-        Serial.println(client_cnt);
-      }
+      Serial.print(F("> Cliente Modbus conectado: ")); //a new client connected
+      Serial.print(newClient.remoteIP());
+      Serial.print(" , Total:");
+      Serial.println(client_cnt);
       break;
       }
     }

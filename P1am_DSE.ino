@@ -19,7 +19,6 @@
 #include <KontrolMin.h>
 #include <StateMachine.h>
 #include <SD.h>
-
 #include "DSEAlarms.h"
 #include <DSE.h>
 
@@ -27,8 +26,7 @@
 //MACROS
 #define NUMBER_OF_DSE 7//SI SON MAS DE 8 MODULOS SE DEBE CONFIGURAR LOS OBJETOs DE EthernetClient y ModbusTCPClient
 #define NUMBER_OF_MODBUS_CLIENTS 1  //CANTIDAD DE CLIENTES QUE PUEDEN CONETARSE POR MODBUS
-// #define MODBUS_TIMEOUT 200
-#define MODBUS_RECONNECT_TIME 30000
+#define MODBUS_RECONNECT_TIME 30000 //TIEMPO DE RECONEXION DE LOS MODULOS
 #define UPDATE_DATE_PERIOD 1296000000 //LA FECHA DE LOS DSE SE ACTUALIZAN CADA 15 DIAS
 #define RTC_UPDATE_TIME 300000 // se actualiza el rtc cada 5 minutos
 
@@ -48,6 +46,7 @@
 #define SCH_TRANSITION_OPEN false
 #define SCH_TRANSITION_CLOSED true
 
+//MODULO BASE PARA LA LECTURA DE LA FECHA
 #define DSE_BASE_8660 0
 #define DSE_BASE_8610 1
 //
@@ -58,7 +57,7 @@
 unsigned long frame=0;
 unsigned long beforeFrame = 0;
 TimeEvent frameEvent = TimeEvent(1000);
-bool debug = true;
+// bool debug = true;
 bool debugUtilidades = false;
 //
 //////////////////////////////////////////////////////
@@ -145,17 +144,17 @@ unsigned int schMinute = 0;
 unsigned int schDay = 1;
 unsigned int schMonth = 1;
 unsigned int schDuration = 1;
-//
+
 bool schCoils[18] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 unsigned int schHolding[5]={0,0,0,0,0};
-//
+
 TimeEvent schDurationTimer = TimeEvent(5000);
 
 //////////////////////////////////////////////////////
 //SD CARD
 const int chipSelect = SDCARD_SS_PIN;
 String dataWriteSD;
-//
+
 //////////////////////////////////////////////////////
 //VARIABLES PANTALLA DE ALARMA Y EVENT LOG
 char alarmLine[60];//ARRAY DE TEXTO DE ALARMAS
@@ -163,8 +162,9 @@ unsigned int tabla = 0;//TABLA DE EVENTLOG QUE SE ESTA LEYENDO
 unsigned int tablaActive = 0 ;//TABLA DE ALARMA ACTIVA QUE SE ESTA LEYENDO
 unsigned int monthTable = 1;//MES DE LECTURA
 unsigned int yearTable = 20;//AÑO DE LECTURA
-//
 
+//////////////////////////////////////////////////////
+//MODULOS DSE
 DSE modulos[NUMBER_OF_DSE] = {
   DSE(DSE_8660MKII, IPAddress(192, 168, 137,  126), "SBA1"),
   DSE(DSE_8610MKII, IPAddress(192, 168, 137,  128), "Gen 1"),
@@ -207,8 +207,11 @@ void setup(){
   updateDateEvent.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
   updateDateEvent.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
 
+  //////////////////////////////////////////////////////
+  //COMFIGURANDO TIMER DE LECTURA DE LOS MODULOS
   readDseTimer.repeat();
   readDseTimer.start();
+
   //////////////////////////////////////////////////////
   //CONFIGURANDO TIMER DE RECONECCION
   dseReconnect.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
@@ -218,7 +221,7 @@ void setup(){
   //CONFIGURANDO TIMER DE RTC
   rtcUpdate.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
   rtcUpdate.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
-  //
+
   //////////////////////
   //ETHERNET-MODBUS
   Ethernet.begin(mac, ip);
@@ -242,12 +245,19 @@ void setup(){
   modbusTCPServer.configureInputRegisters(0x00,10);
   modbusTCPServer.configureHoldingRegisters(0x00,1600);
   Serial.println(F("> Registros Modbus configurados"));
-  //
+
   initializeArrays();//inicializando los arrays
 
-  readDse();
-  readModuleDate();
-  //
+  //////////////////////////////////////////////////////
+  //INICIALIZANDO MODULOS
+  for(int i=0; i<NUMBER_OF_DSE;i++){
+    modulos[i].begin();
+  }
+  readDse();//PRIMERA LECTURA DE LOS MODULOS
+  readModuleDate();//LEYENDO Y ACTUALIZANDO RTC DEL PLC TOMANDO COMO REFERENCIA RTC DE MODULO BASE
+
+  //////////////////////////////////////////////////////
+  //INICIALIZANDO DATALOGGER
   SD.remove(F("ACTIVE.csv"));//BORRANDO LAS ALARMAS ACTIVAS
   dataloggerInit();//INICIANDO EL DATALOGGER
   dataWriteSD = F("PLC REINICIADO");
@@ -256,11 +266,6 @@ void setup(){
   modbusTCPServer.holdingRegisterWrite(1240,rtc.getMonth());
   modbusTCPServer.holdingRegisterWrite(1241,rtc.getYear());
   Serial.println(F("> Setup finalizado"));
-
-  for(int i=0; i<NUMBER_OF_DSE;i++){
-    modulos[i].begin();
-  }
-
 }//FIN SETUP
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -280,9 +285,9 @@ void loop(){
     generalCommonAlarm |= modulos[i].commonAlarm;
   }
 
-
-  if(readDseTimer.run()){//TIMER DE LECTURA DE LOS REGISTROS DE LOS DSE
-
+  //////////////////////////////////////////////////////
+  //TIMER DE LECTURA DE LOS REGISTROS DE LOS DSE
+  if(readDseTimer.run()){
     //////////////////////////////////////////////////////
     //TIMER DE RECONEXION
     if(dseReconnect.run()){
@@ -291,7 +296,7 @@ void loop(){
 
     applyReadMode();
     readDse();//LEYENDO LAS LOS REGISTROS DE LOS DSE
-    activateAlarms();
+    activateAlarms();//REVISANDO LAS ALARMAS PARA AGREGARLAS AL DATALOGGER
     digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));//PAPADEO DEL LED FRONTAL
   }
 
@@ -324,11 +329,11 @@ void loop(){
     modbusTCPServer.holdingRegisterWrite(1563,tablaActive);//ESCRIBIENDO EN EL REGISTRO EL NUEVO NUMERO DE TABLA QUE SE ESTA MOSTRANDO
     alarmsLoggerRead();//MOSTRANDO LAS ALARMAS ACTIVAS
   }
-  //
+
   //////////////////////////////////////////////////////
   //MANEJANDO LOS CLIENTES
   handleModbusClients();
-  //
+
   //////////////////////////////////////////////////////
   //KONTROL
   if(Serial.available()>0){
@@ -362,7 +367,8 @@ void loop(){
   }
 
   //////////////////////////////////////////////////////
-  if(rtcUpdate.run()){//TIMER DE ACTUALIZACION DE RTC
+  //TIMER DE ACTUALIZACION DE RTC
+  if(rtcUpdate.run()){
     readModuleDate();
   }
 
