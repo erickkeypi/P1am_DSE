@@ -1,11 +1,12 @@
 void initializeArrays(){//FUNCION QUE INICIALIZA LOS ARRAYS
   if(debug){Serial.println(F("> Arrays inicializados"));}
-//     for(int i=0;i<NUMBER_OF_DSE;i++){
-//       for(int j=0;j<150;j++){
-//         oldDseAlarms[i][j]=0;
-//       }
-//     }
     eraseErrorComm();
+    for(int i=0;i<NUMBER_OF_DSE;i++){
+      oldDseErrorComm[i]=false;
+      for(int j=0;j<150;j++){
+        oldDseAlarms[i][j] =false;
+      }
+    }
 }
 
 void eraseErrorComm(){
@@ -300,172 +301,117 @@ void writeAlarmsLineModbus(unsigned int _reg,unsigned int _add){//FUNCION PARA E
   }
 }
 
-// void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUARDA
-//
-//   static bool alarmaDesactivada = false;
-//
-//   if(alarmaDesactivada){
-//     //SI SE DESACTIVA UNA ALARMA SE BORRA EL ARCHIVO DE ALARMAS ACTIVAS
-//     //LUEGO SE VUELVE A BUSCAR LAS ALARMAS ACTIVAS Y SE GUARDAN
-//     SD.remove(F("ACTIVE.csv"));
-//     for(int i=0;i<8;i++){//BUSCANDO ALARMAS DE ERROR DE CONEXION
-//       switch (modoLectura) {
-//         case READ_ONLY_GEN:
-//         if(i==0 || i==2 || i==3 || i==4){//saltando los master
-//           continue;
-//         }
-//         break;
-//
-//         case READ_ONLY_MASTER:
-//         if(i==1 || i==5 || i==6 || i==7){//saltando los gen
-//           continue;
-//         }
-//         break;
-//
-//         case READ_MASTER_AND_GEN:
-//         break;
-//       }
-//       if(oldDseErrorComm[i]){
-//         dataWriteSD = nombres[i];
-//         dataWriteSD += F(" COMM ERROR");
-//         alarmsLogger();
-//       }
-//     }
-//     for(int i=0;i<NUMBER_OF_DSE;i++){//BUSCANDO ALARMAS DE LOS DSE
-//       switch (modoLectura) {
-//         case READ_ONLY_GEN:
-//         if(i==0 || i==2 || i==3 || i==4){//saltando los master
-//           continue;
-//         }
-//         break;
-//
-//         case READ_ONLY_MASTER:
-//         if(i==1 || i==5 || i==6 || i==7){//saltando los gen
-//           continue;
-//         }
-//         break;
-//
-//         case READ_MASTER_AND_GEN:
-//         break;
-//       }
-//       for (int j=0;j<150;j++){
-//         if(oldDseAlarms[i][j]){
-//           dataWriteSD = nombres[i];
-//           dataWriteSD += " ";
-//           dataWriteSD += DSEAlarmsString[j-1];
-//           alarmsLogger();
-//         }
-//       }
-//     }
-//     alarmaDesactivada=false;
-//   }
-//
-//   for(int i=0;i<8;i++){//REVISANDO SI SE DESACTIVA UNA ALARMA DE ERROR DE CONEXION
-//     switch (modoLectura) {
-//       case READ_ONLY_GEN:
-//       if(i==0 || i==2 || i==3 || i==4){//saltando los master
-//         continue;
-//       }
-//       break;
-//
-//       case READ_ONLY_MASTER:
-//       if(i==1 || i==5 || i==6 || i==7){//saltando los gen
-//         continue;
-//       }
-//       break;
-//
-//       case READ_MASTER_AND_GEN:
-//       break;
-//     }
-//     if(oldDseErrorComm[i] && !dseErrorComm[i]){
-//       alarmaDesactivada =true;
-//       break;
-//     }
-//   }
-//
-//   for(int i=0;i<NUMBER_OF_DSE;i++){//REVISANDO SI SE DESACTIVA UNA ALARMA DE UN DSE
-//     switch (modoLectura) {
-//       case READ_ONLY_GEN:
-//       if(i==0 || i==2 || i==3 || i==4){//saltando los master
-//         continue;
-//       }
-//       break;
-//
-//       case READ_ONLY_MASTER:
-//       if(i==1 || i==5 || i==6 || i==7){//saltando los gen
-//         continue;
-//       }
-//       break;
-//
-//       case READ_MASTER_AND_GEN:
-//       break;
-//     }
-//     for (int j=0;j<150;j++){
-//       if(oldDseAlarms[i][j] && !dseAlarms[i][j]){
-//         alarmaDesactivada =true;
-//         break;
-//       }
-//       if(alarmaDesactivada){
-//         break;
-//       }
-//     }
-//   }
-//
-//   for(int i=0;i<8;i++){//REVISANDO SI SE ACTIVA UNA ALARMA DE ERROR DE CONEXION
-//     switch (modoLectura) {
-//       case READ_ONLY_GEN:
-//       if(i==0 || i==2 || i==3 || i==4){//saltando los master
-//         continue;
-//       }
-//       break;
-//
-//       case READ_ONLY_MASTER:
-//       if(i==1 || i==5 || i==6 || i==7){//saltando los gen
-//         continue;
-//       }
-//       break;
-//
-//       case READ_MASTER_AND_GEN:
-//       break;
-//     }
-//     if(!oldDseErrorComm[i] && dseErrorComm[i]){
-//       dataWriteSD = nombres[i];
-//       dataWriteSD += F(" COMM ERROR");
-//       datalogger();//AGREGANDO AL EVENTO LOG
-//       alarmsLogger();//AGREGANDO A LAS ALARMAS ACTIVAS
-//     }
-//     oldDseErrorComm[i] = dseErrorComm[i];
-//   }
-//
-//   for(int i=0;i<NUMBER_OF_DSE;i++){//REVISANDO SI SE ACTIVA UNA ALARMA DE DSE
-//     switch (modoLectura) {
-//       case READ_ONLY_GEN:
-//       if(i==0 || i==2 || i==3 || i==4){//saltando los master
-//         continue;
-//       }
-//       break;
-//
-//       case READ_ONLY_MASTER:
-//       if(i==1 || i==5 || i==6 || i==7){//saltando los gen
-//         continue;
-//       }
-//       break;
-//
-//       case READ_MASTER_AND_GEN:
-//       break;
-//     }
-//     for (int j=0;j<150;j++){
-//       if(!oldDseAlarms[i][j] && dseAlarms[i][j]){
-//         dataWriteSD = nombres[i];
-//         dataWriteSD += " ";
-//         dataWriteSD += DSEAlarmsString[j-1];//SE TOMA EL TEXTO DE LA ALARMA DE DSEAlarms.H
-//         datalogger();//AGREGANDO AL EVENT LOG
-//         alarmsLogger();//AGREGANDO A LAS ALARMAS ACTIVAS
-//       }
-//       oldDseAlarms[i][j] = dseAlarms[i][j];
-//     }
-//   }
-// }
+void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUARDA
+
+  static bool alarmaDesactivada = false;
+
+  if(alarmaDesactivada){
+    //SI SE DESACTIVA UNA ALARMA SE BORRA EL ARCHIVO DE ALARMAS ACTIVAS
+    //LUEGO SE VUELVE A BUSCAR LAS ALARMAS ACTIVAS Y SE GUARDAN
+    SD.remove(F("ACTIVE.csv"));
+    for(int i=0;i<NUMBER_OF_DSE;i++){//BUSCANDO ALARMAS DE ERROR DE CONEXION
+      switch (modoLectura) {
+        case READ_ONLY_GEN:
+        if(modulos[i].model == DSE_8660MKII){//saltando los master
+          continue;
+        }
+        break;
+
+        case READ_ONLY_MASTER:
+        if(modulos[i].model == DSE_8610MKII){//saltando los gen
+          continue;
+        }
+        break;
+
+        case READ_MASTER_AND_GEN:
+        break;
+      }
+      if(oldDseErrorComm[i]){//si hubo un error de conexion
+        dataWriteSD = modulos[i].getName();
+        dataWriteSD += F(" COMM ERROR");
+        alarmsLogger();
+      }
+      for (int j=0;j<150;j++){
+        if(oldDseAlarms[i][j]){
+          dataWriteSD = modulos[i].getName();
+          dataWriteSD += " ";
+          dataWriteSD += DSEAlarmsString[j-1];
+          alarmsLogger();
+        }
+      }
+    }
+    alarmaDesactivada=false;
+  }
+
+  for(int i=0;i<NUMBER_OF_DSE;i++){//REVISANDO SI SE DESACTIVA UNA ALARMA DE ERROR DE CONEXION O DE DSE
+    switch (modoLectura) {
+      case READ_ONLY_GEN:
+      if(modulos[i].model == DSE_8660MKII){//saltando los master
+        continue;
+      }
+      break;
+
+      case READ_ONLY_MASTER:
+      if(modulos[i].model == DSE_8610MKII){//saltando los gen
+        continue;
+      }
+      break;
+
+      case READ_MASTER_AND_GEN:
+      break;
+    }
+    if(oldDseErrorComm[i] && !dseErrorComm[i]){
+      alarmaDesactivada =true;
+      break;
+    }
+    for (int j=0;j<150;j++){
+      if(oldDseAlarms[i][j] && !modulos[i].alarms[j]){
+        alarmaDesactivada =true;
+        break;
+      }
+      if(alarmaDesactivada){
+        break;
+      }
+    }
+  }
+
+  for(int i=0;i<NUMBER_OF_DSE;i++){//REVISANDO SI SE ACTIVA UNA ALARMA DE ERROR DE CONEXION
+    switch (modoLectura) {
+      case READ_ONLY_GEN:
+      if(modulos[i].model == DSE_8660MKII){//saltando los master
+        continue;
+      }
+      break;
+
+      case READ_ONLY_MASTER:
+      if(modulos[i].model == DSE_8610MKII){//saltando los gen
+        continue;
+      }
+      break;
+
+      case READ_MASTER_AND_GEN:
+      break;
+    }
+    if(!oldDseErrorComm[i] && dseErrorComm[i]){
+      dataWriteSD = modulos[i].getName();
+      dataWriteSD += F(" COMM ERROR");
+      datalogger();//AGREGANDO AL EVENTO LOG
+      alarmsLogger();//AGREGANDO A LAS ALARMAS ACTIVAS
+    }
+    oldDseErrorComm[i] = dseErrorComm[i];
+
+    for (int j=0;j<150;j++){
+      if(!oldDseAlarms[i][j] && modulos[i].alarms[j]){
+        dataWriteSD = modulos[i].getName();
+        dataWriteSD += " ";
+        dataWriteSD += DSEAlarmsString[j-1];//SE TOMA EL TEXTO DE LA ALARMA DE DSEAlarms.H
+        datalogger();//AGREGANDO AL EVENT LOG
+        alarmsLogger();//AGREGANDO A LAS ALARMAS ACTIVAS
+      }
+      oldDseAlarms[i][j] = modulos[i].alarms[j];
+    }
+  }
+}
 
 void computeSchRegisters(){//FUNCION QUE HACE LOS CALCULOS DEL SCHEDULE
   //los siguientes "if" hacen que si se disminuye la cantidad menos que el limite inferior esta pasa a su limite superior
@@ -1003,8 +949,10 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
 //
 void utilidades(){
   //CALCULANDO EL TIEMPO DE EJECUCION DE UN CICLO DE PROGRAMA (FRAME)
-  frame = micros() - beforeFrame;
+  static unsigned int frameNumbers =0;
+  frame += micros() - beforeFrame;
   beforeFrame = micros();
+  frameNumbers ++;
 
   if(frameEvent.run() && debugUtilidades){
 
@@ -1012,12 +960,13 @@ void utilidades(){
 
     //IMPRIMIENDO EL TIEMPO DE FRAME
     Serial.print(F("> Frame time(us): "));
-    Serial.println(frame);
+    Serial.println(frame/frameNumbers);
 
     //IMPRIMIENDO LA MEMORIA DISPONIBLE
     printMemory();
 
     Serial.println();
+    frame = frameNumbers = 0;
   }
 }
 

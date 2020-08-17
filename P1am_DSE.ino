@@ -90,18 +90,14 @@ TimeEvent rtcUpdate = TimeEvent(10000);//Al principio el RTC trata de actualizar
 //TIMER UTILIZADO PARA LA LECTURA DE LOS REGISTROS DE LOS DSE
 TimeEvent readDseTimer = TimeEvent(1000);
 
-// //////////////////////////////////////////////////////
-// //ARRAYS
-// int dseIR[NUMBER_OF_DSE][37];//alarmas leidas
-// bool dseAlarms[NUMBER_OF_DSE][150];//bits de las alarmas
+//////////////////////////////////////////////////////
+//ARRAYS
 bool dseErrorComm[NUMBER_OF_DSE];//error de comunicacion
-// bool oldDseErrorComm[8];//ESTADO ANTERIOR DE LOS ERRORES
-// bool oldDseAlarms[NUMBER_OF_DSE][150];//ESTADO ANTERIOR DE LAS ALARMAS
-// unsigned int variablesPrincipales[NUMBER_OF_DSE][20];//array para guardar valores que se presentan en la pantalla principal
+bool oldDseErrorComm[NUMBER_OF_DSE];//ESTADO ANTERIOR DE LOS ERRORES
+bool oldDseAlarms[NUMBER_OF_DSE][150];//ESTADO ANTERIOR DE LAS ALARMAS
 
 // //////////////////////////////////////////////////////
 // //PANTALLAS
-// bool dseInputs[8][10];//GUARDA EL ESTADO DE LOS BREAKERS, LA DISPONIBILIDAD, ETC.
 unsigned int masterScreen[60];//VARIABLES PARA LA PANTALLA DE MASTER
 unsigned int masterActual = 0;//MASTER DEL CUAL SE ESTA LEYENDO LOS VALORES
 bool masterButtonPress = false;//ESTADO DE BOTON DE COMANDO DE MASTER
@@ -109,10 +105,7 @@ bool masterButtonPress = false;//ESTADO DE BOTON DE COMANDO DE MASTER
 unsigned int genScreen[60];//VARIABLES PARA LA PANTALLA DE GEN
 unsigned int genActual = 1;//GEN DEL CUAL SE ESTA LEYENDO LOS VALORES
 bool genButtonPress = false;//ESTADO DE BOTON DE COMANDO DE GEN
-// unsigned int priorityChange[4];//PRIORIDAD DE LOS GEN
-//
-// unsigned int busScreen[50];//VARIABLES PARA LA PANTALLA DE BUS
-//
+
 //////////////////////////////////////////////////////
 //MODOS DE LECTURA PARA HACER QUE SOLO LEA MASTERS O GENERADORES
 int modoLectura = READ_MASTER_AND_GEN;
@@ -289,8 +282,16 @@ void loop(){
 
 
   if(readDseTimer.run()){//TIMER DE LECTURA DE LOS REGISTROS DE LOS DSE
+
+    //////////////////////////////////////////////////////
+    //TIMER DE RECONEXION
+    if(dseReconnect.run()){
+      eraseErrorComm();
+    }
+
     applyReadMode();
     readDse();//LEYENDO LAS LOS REGISTROS DE LOS DSE
+    activateAlarms();
     digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));//PAPADEO DEL LED FRONTAL
   }
 
@@ -380,12 +381,6 @@ void loop(){
   writeModbusDiscreteInputs();
   writeModbusInputRegisters();
   writeModbusHoldingRegisters();
-
-  //////////////////////////////////////////////////////
-  //TIMER DE RECONEXION
-  if(dseReconnect.run()){
-    eraseErrorComm();
-  }
 
   /////////////////////////////
   //UTILIDADES
