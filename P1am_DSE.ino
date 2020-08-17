@@ -29,7 +29,7 @@
 #define NUMBER_OF_MODBUS_CLIENTS 1  //CANTIDAD DE CLIENTES QUE PUEDEN CONETARSE POR MODBUS
 // #define MODBUS_TIMEOUT 200
 #define MODBUS_RECONNECT_TIME 30000
-// #define UPDATE_DATE_PERIOD 1296000000 //LA FECHA DE LOS DSE SE ACTUALIZAN CADA 15 DIAS
+#define UPDATE_DATE_PERIOD 1296000000 //LA FECHA DE LOS DSE SE ACTUALIZAN CADA 15 DIAS
 #define RTC_UPDATE_TIME 300000 // se actualiza el rtc cada 5 minutos
 
 //MODOS DE LECTURA
@@ -47,6 +47,9 @@
 #define SCH_TEST_ON_LOAD true
 #define SCH_TRANSITION_OPEN false
 #define SCH_TRANSITION_CLOSED true
+
+#define DSE_BASE_8660 0
+#define DSE_BASE_8610 1
 //
 //////////////////////////////////////////////////////
 //UTILIDADES
@@ -66,19 +69,19 @@ KontrolMin kontrol = KontrolMin();
 //RTC
 RTCZero rtc;
 
-// //////////////////////////////////////////////////////
-// //TIMER UTILIZADO PARA ACTUALIZAR LA FECHA DE LOS DSE
-// TimeEvent updateDateEvent = TimeEvent(UPDATE_DATE_PERIOD);
-//
+//////////////////////////////////////////////////////
+//TIMER UTILIZADO PARA ACTUALIZAR LA FECHA DE LOS DSE
+TimeEvent updateDateEvent = TimeEvent(UPDATE_DATE_PERIOD);
+
 unsigned long updateDateLastTime = 0;//variable complementaria utilizada para hacer que el boton de actualizar fecha deje de estar presionado
 bool updatingDate = false;//variable complementaria para actualizar la fecha de los DSE
 bool updateModulesDates = false;//VARIABLE QUE SE ACTIVA CUANDO SE VAYAN A ACTUALIZAR LOS MODULOS DSE
-// int dseBase =0;//numero de modulo DSE de donde se leera la fecha
-//
+int dseBase = DSE_BASE_8660;//numero de modulo DSE de donde se leera la fecha
+
 //////////////////////////////////////////////////////
 //TIMER UTILIZADO PARA LA RECONECCION DE LOS DSE CUANDO SE PIERDE LA COMUNICACION
 TimeEvent dseReconnect = TimeEvent(MODBUS_RECONNECT_TIME);
-//
+
 //////////////////////////////////////////////////////
 //TIMER UTILIZADO PARA LA ACTUALIZAION DEL RTC
 TimeEvent rtcUpdate = TimeEvent(10000);//Al principio el RTC trata de actualizarse cada 10 segundos luego pasa al tiempo definido por UPDATE_DATE_PERIOD
@@ -175,8 +178,8 @@ DSE modulos[NUMBER_OF_DSE] = {
   DSE(DSE_8660MKII, IPAddress(192, 168, 137,  126), "SBA2"),
   DSE(DSE_8660MKII, IPAddress(192, 168, 137,  126), "SBB1"),
   DSE(DSE_8660MKII, IPAddress(192, 168, 137,  126), "SBB2"),
-  DSE(DSE_8610MKII, IPAddress(192, 168, 137,  127), "Gen 2"),
-  DSE(DSE_8610MKII, IPAddress(192, 168, 137,  127), "Gen 3")
+  DSE(DSE_8610MKII, IPAddress(192, 168, 137,  128), "Gen 2"),
+  DSE(DSE_8610MKII, IPAddress(192, 168, 137,  128), "Gen 3")
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -200,17 +203,16 @@ void setup(){
   Serial.begin(115200);//COMUNICACION SERIAL
   delay(2000);//RETARDO PARA EL INICIO DEL PROGRAMA
 
-  // if(debug){
-    Serial.println(F("\n**********INIT**********"));//MARCANDO EL INICIO DEL PROGRAMA
-  // }
+  Serial.println(F("\n**********INIT**********"));//MARCANDO EL INICIO DEL PROGRAMA
+
   SD_Begin();//INICIANDO MICRO SD
   Serial.println(F("> Iniciando RTC"));
   rtc.begin();///INICIANDO RTC
-  //
-  // //////////////////////////////////////////////////////
-  // //COMFIGURANDO TIMER DE ACTUALIZACION DE FECHAS
-  // updateDateEvent.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
-  // updateDateEvent.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
+
+  //////////////////////////////////////////////////////
+  //COMFIGURANDO TIMER DE ACTUALIZACION DE FECHAS
+  updateDateEvent.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
+  updateDateEvent.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
 
   readDseTimer.repeat();
   readDseTimer.start();
@@ -218,24 +220,16 @@ void setup(){
   //CONFIGURANDO TIMER DE RECONECCION
   dseReconnect.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
   dseReconnect.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
-  //
-  // //////////////////////////////////////////////////////
-  // //CONFIGURANDO TIMER DE RTC
-  // rtcUpdate.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
-  // rtcUpdate.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
+
+  //////////////////////////////////////////////////////
+  //CONFIGURANDO TIMER DE RTC
+  rtcUpdate.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
+  rtcUpdate.start();//EL TIMER INICIA DESDE QUE INICIA EL PROGRAMA
   //
   //////////////////////
   //ETHERNET-MODBUS
   Ethernet.begin(mac, ip);
-  // modbusTCPClient[0].setTimeout(MODBUS_TIMEOUT);
-  // modbusTCPClient[1].setTimeout(MODBUS_TIMEOUT);
-  // modbusTCPClient[2].setTimeout(MODBUS_TIMEOUT);
-  // modbusTCPClient[3].setTimeout(MODBUS_TIMEOUT);
-  // modbusTCPClient[4].setTimeout(MODBUS_TIMEOUT);
-  // modbusTCPClient[5].setTimeout(MODBUS_TIMEOUT);
-  // modbusTCPClient[6].setTimeout(MODBUS_TIMEOUT);
-  // modbusTCPClient[7].setTimeout(MODBUS_TIMEOUT);
-  //
+
   //////////////////////////////////////////////////////
   //INICIANDO SERVIDOR MODBUS
   Serial.println(F("> Iniciando servidor Modbus"));
@@ -245,10 +239,8 @@ void setup(){
     //ACTIVAR LED DE ERROR
     while(1);
   }else{//SI SE INICIA EL SERVIDOR MODBUS
-    // if(debug){
-      Serial.print(F("> Servidor Modbus iniciado, IP: "));
-      Serial.println(ip);
-    // }
+    Serial.print(F("> Servidor Modbus iniciado, IP: "));
+    Serial.println(ip);
   }
   //////////////////////////////////////////////////////
   //CONFIGURANDO REGISTROS MODBUS
@@ -259,18 +251,18 @@ void setup(){
   Serial.println(F("> Registros Modbus configurados"));
   //
   initializeArrays();//inicializando los arrays
+
+  readDse();
+  readModuleDate();
   //
-  // connectModules();
-  // readModuleDate();
-  //
-  // SD.remove(F("ACTIVE.csv"));//BORRANDO LAS ALARMAS ACTIVAS
-  // dataloggerInit();//INICIANDO EL DATALOGGER
-  // dataWriteSD = F("PLC REINICIADO");
-  // datalogger();
-  // dataloggerRead(rtc.getMonth(),rtc.getYear());//LEYENDO EL DATALOGGER DEL MES Y AÑO ACTUAL
-  // modbusTCPServer.holdingRegisterWrite(1240,rtc.getMonth());
-  // modbusTCPServer.holdingRegisterWrite(1241,rtc.getYear());
-  // Serial.println(F("> Setup finalizado"));
+  SD.remove(F("ACTIVE.csv"));//BORRANDO LAS ALARMAS ACTIVAS
+  dataloggerInit();//INICIANDO EL DATALOGGER
+  dataWriteSD = F("PLC REINICIADO");
+  datalogger();
+  dataloggerRead(rtc.getMonth(),rtc.getYear());//LEYENDO EL DATALOGGER DEL MES Y AÑO ACTUAL
+  modbusTCPServer.holdingRegisterWrite(1240,rtc.getMonth());
+  modbusTCPServer.holdingRegisterWrite(1241,rtc.getYear());
+  Serial.println(F("> Setup finalizado"));
 
   for(int i=0; i<NUMBER_OF_DSE;i++){
     modulos[i].begin();
@@ -299,40 +291,38 @@ void loop(){
   if(readDseTimer.run()){//TIMER DE LECTURA DE LOS REGISTROS DE LOS DSE
     applyReadMode();
     readDse();//LEYENDO LAS LOS REGISTROS DE LOS DSE
-  //   computeDseAlarms();//SEPARANDO LAS ALARMAS QUE VIENEN EN EL MISMO REGISTRO
-  //   activateAlarms();//DETERMINANDO SE SE HA ACTIVADO UNA ALARMA
     digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));//PAPADEO DEL LED FRONTAL
   }
-  //
-  // //////////////////////////////////////////////////////
-  // //LOGICA PARA EL MANEJO DE LA PANTALLA DE EVENT LOG
-  // unsigned int tablaServer = modbusTCPServer.holdingRegisterRead(1243);//TABLA QUE SE QUIERE MOSTRAR
-  // unsigned int monthServer = modbusTCPServer.holdingRegisterRead(1240);//MES QUE SE QUIERE MOSTRAR
-  // unsigned int yearServer = modbusTCPServer.holdingRegisterRead(1241);//AÑO QUE SE QUIERE MOSTRAR
-  //
-  // if(tablaServer != tabla || monthTable != monthServer || yearTable != yearServer){//SI CAMBIA EL MES, EL AÑO O LA TABLA QUE SE ESTA MOSTRANDO
-  //   if(tablaServer>10000){//LIMITANDO EL NUMERO DE TABLA
-  //     tablaServer = 0;
-  //   }
-  //   //CAMBIANDO A LOS NUEVOS VALORES QUE SE QUIEREN MOSTRAR
-  //   monthTable = monthServer;
-  //   yearTable = yearServer;
-  //   tabla = tablaServer;
-  //   modbusTCPServer.holdingRegisterWrite(1243,tabla);//ESCRIBIENDO EN EL REGISTRO EL NUEVO NUMERO DE TABLA QUE SE ESTA MOSTRANDO
-  //   dataloggerRead(monthTable,yearTable);//MOSTRANDO EL EVENTLOG
-  // }
-  //
-  // //////////////////////////////////////////////////////
-  // //LOGICA PARA EL MANEJO DE LA PANTALLA DE ALARMAS ACTIVAS
-  // tablaServer = modbusTCPServer.holdingRegisterRead(1563);//TABLA QUE SE QUIERE MOSTRAR
-  // if(tablaServer != tablaActive){//SI CAMBIA LA TABLA QUE SE ESTA MOSTRANDO
-  //   if(tablaServer>10000){//LIMITANDO
-  //     tablaServer = 0;
-  //   }
-  //   tablaActive = tablaServer;
-  //   modbusTCPServer.holdingRegisterWrite(1563,tablaActive);//ESCRIBIENDO EN EL REGISTRO EL NUEVO NUMERO DE TABLA QUE SE ESTA MOSTRANDO
-  //   alarmsLoggerRead();//MOSTRANDO LAS ALARMAS ACTIVAS
-  // }
+
+  //////////////////////////////////////////////////////
+  //LOGICA PARA EL MANEJO DE LA PANTALLA DE EVENT LOG
+  unsigned int tablaServer = modbusTCPServer.holdingRegisterRead(1243);//TABLA QUE SE QUIERE MOSTRAR
+  unsigned int monthServer = modbusTCPServer.holdingRegisterRead(1240);//MES QUE SE QUIERE MOSTRAR
+  unsigned int yearServer = modbusTCPServer.holdingRegisterRead(1241);//AÑO QUE SE QUIERE MOSTRAR
+
+  if(tablaServer != tabla || monthTable != monthServer || yearTable != yearServer){//SI CAMBIA EL MES, EL AÑO O LA TABLA QUE SE ESTA MOSTRANDO
+    if(tablaServer>10000){//LIMITANDO EL NUMERO DE TABLA
+      tablaServer = 0;
+    }
+    //CAMBIANDO A LOS NUEVOS VALORES QUE SE QUIEREN MOSTRAR
+    monthTable = monthServer;
+    yearTable = yearServer;
+    tabla = tablaServer;
+    modbusTCPServer.holdingRegisterWrite(1243,tabla);//ESCRIBIENDO EN EL REGISTRO EL NUEVO NUMERO DE TABLA QUE SE ESTA MOSTRANDO
+    dataloggerRead(monthTable,yearTable);//MOSTRANDO EL EVENTLOG
+  }
+
+  //////////////////////////////////////////////////////
+  //LOGICA PARA EL MANEJO DE LA PANTALLA DE ALARMAS ACTIVAS
+  tablaServer = modbusTCPServer.holdingRegisterRead(1563);//TABLA QUE SE QUIERE MOSTRAR
+  if(tablaServer != tablaActive){//SI CAMBIA LA TABLA QUE SE ESTA MOSTRANDO
+    if(tablaServer>10000){//LIMITANDO
+      tablaServer = 0;
+    }
+    tablaActive = tablaServer;
+    modbusTCPServer.holdingRegisterWrite(1563,tablaActive);//ESCRIBIENDO EN EL REGISTRO EL NUEVO NUMERO DE TABLA QUE SE ESTA MOSTRANDO
+    alarmsLoggerRead();//MOSTRANDO LAS ALARMAS ACTIVAS
+  }
   //
   //////////////////////////////////////////////////////
   //MANEJANDO LOS CLIENTES
@@ -351,51 +341,51 @@ void loop(){
   kontrol.addListener("printmemory",printMemory);
   kontrol.addListener("readmode",modoLecturaCallback);
   kontrol.addListener("test",testCallback);
-  //
+
   //////////////////////////////////////////////////////
-  //TIMER DE RECONEXION
-  if(dseReconnect.run()){
-    eraseErrorComm();
+  //ACTUALIZANDO LA FECHA DE LOS MODULOS Y DEL PLC
+  if(updateDateEvent.run()){//TIMER DE ACTUALIZACION DE FECHA DE LOS MODULOS
+    updateModulesDates = true;
   }
-  //
-  // //////////////////////////////////////////////////////
-  // //ACTUALIZANDO LA FECHA DE LOS MODULOS Y DEL PLC
-  // if(updateDateEvent.run()){//TIMER DE ACTUALIZACION DE FECHA DE LOS MODULOS
-  //   updateModulesDates = true;
-  // }
-  // if(updateModulesDates && !updatingDate){
-  //   Serial.println(F("> Actualizando fechas de los modulos"));
-  //   readModuleDate();
-  //   updatingDate = true;
-  //   updateDateLastTime = millis();
-  // }
-  // if(updatingDate && (millis() > (updateDateLastTime + 1000))){
-  //   updateModulesDates = false;
-  //   updatingDate =false;
-  //   updateDseDates();
-  //   Serial.println(F("> Fecha de modulos actualizadas"));
-  // }
-  //
-  // //////////////////////////////////////////////////////
-  // if(rtcUpdate.run()){//TIMER DE ACTUALIZACION DE RTC
-  //   readModuleDate();
-  // }
-  //
-  // //////////////////////////////////////////////////////
-  // //LOGICA DEL SCHEDULE
-  // computeSchRegisters();
-  // if(schDurationTimer.run()){
-  //   schActive = false;
-  //   schDurationTimer.stop();
-  //   Serial.println(F("> Schedule desactivado"));
-  // }
+  if(updateModulesDates && !updatingDate){
+    Serial.println(F("> Actualizando fechas de los modulos y PLC"));
+    readModuleDate();
+    updatingDate = true;
+    updateDateLastTime = millis();
+  }
+  if(updatingDate && (millis() > (updateDateLastTime + 1000))){
+    updateModulesDates = false;
+    updatingDate =false;
+    updateDseDates();
+    Serial.println(F("> Fecha de modulos actualizadas"));
+  }
+
+  //////////////////////////////////////////////////////
+  if(rtcUpdate.run()){//TIMER DE ACTUALIZACION DE RTC
+    readModuleDate();
+  }
+
+  //////////////////////////////////////////////////////
+  //LOGICA DEL SCHEDULE
+  computeSchRegisters();
+  if(schDurationTimer.run()){
+    schActive = false;
+    schDurationTimer.stop();
+    Serial.println(F("> Schedule desactivado"));
+  }
 
   //////////////////////////////////////////////////////
   //ACTUALIZANDO LOS REGISTROS MODBUS
   writeModbusCoils();
   writeModbusDiscreteInputs();
-  // writeModbusInputRegisters();
+  writeModbusInputRegisters();
   writeModbusHoldingRegisters();
+
+  //////////////////////////////////////////////////////
+  //TIMER DE RECONEXION
+  if(dseReconnect.run()){
+    eraseErrorComm();
+  }
 
   /////////////////////////////
   //UTILIDADES
