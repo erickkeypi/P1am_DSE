@@ -864,9 +864,9 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
         currentL2 += modulos[i].IL2;
         currentL3 += modulos[i].IL3;
 
-        // totalWattsL1 += modulos[i].KW;//bus total watts l1
-        // totalWattsL2 += modulos[i].KW;//bus total watts l2
-        // totalWattsL3 += modulos[i].KW;//
+        totalWattsL1 += modulos[i].L1KW;
+        totalWattsL2 += modulos[i].L2KW;
+        totalWattsL3 += modulos[i].L3KW;
       }
     }
     for(int i=0;i<NUMBER_OF_DSE;i++){
