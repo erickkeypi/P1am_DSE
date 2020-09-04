@@ -45,5 +45,28 @@ void modoLecturaCallback(){
 
 void testCallback(){
   Serial.println(F("> Test callback"));
+  remoteStartOnLoad(0);
+  Serial.println();
+}
+void test2Callback(){
+  Serial.println(F("> Test2 callback"));
+  remoteStartOffLoad(0);
+  Serial.println();
+}
+void test3Callback(){
+  Serial.println(F("> Test3 callback"));
+  if(modulos[0].connect()){
+    Serial.print("Arg: ");
+    // Serial.println(arg);
+    modulos[0].beginTransmission(17920,2);//42498//18433//17921
+    modulos[0].modbusWrite(0x00);
+    modulos[0].modbusWrite(0x00);
+    modulos[0].endTransmission();
+    modulos[0].beginTransmission(17922,2);//42498//18433//17921
+    modulos[0].modbusWrite(0x00);
+    modulos[0].modbusWrite(0x00);
+    modulos[0].endTransmission();
+    modulos[0].stop();
+  }
   Serial.println();
 }

@@ -8,7 +8,7 @@
 
 //////////////////////////////////////////////////////
 //LIBRERIAS
-#include <SDU.h>
+// #include <SDU.h>
 #include <P1AM.h>
 #include <ArduinoRS485.h>
 #include <ArduinoModbus.h>
@@ -364,6 +364,8 @@ void loop(){
   kontrol.addListener("printmemory",printMemory);
   kontrol.addListener("readmode",modoLecturaCallback);
   kontrol.addListener("test",testCallback);
+  kontrol.addListener("test2",test2Callback);
+  kontrol.addListener("test3",test3Callback);
 
   //////////////////////////////////////////////////////
   //ACTUALIZANDO LA FECHA DE LOS MODULOS Y DEL PLC

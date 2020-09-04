@@ -169,7 +169,7 @@ void readModuleDate(){//FUNCION QUE LEE LA FECHA DEL MODULO ELEGIDO COMO BASE
   if(!dseErrorComm[dseBase]){
     unsigned long time = modulos[dseBase].time;
     rtc.setEpoch(time);
-    rtcUpdate.setFrecuency(RTC_UPDATE_TIME);
+    rtcUpdate.setPeriod(RTC_UPDATE_TIME);
     Serial.print(F("> Actualizando RTC PLC\n\t"));
     Serial.println(getTime());
     Serial.print("\t");
@@ -567,9 +567,9 @@ void computeSchRegisters(){//FUNCION QUE HACE LOS CALCULOS DEL SCHEDULE
 
   //computando si se activa el schedule
   if(schDuration == 0){
-    schDurationTimer.setFrecuency(2000);//TIMER DE 2 SEGUNDOS PARA DESACTIVAR EL SCHEDULE
+    schDurationTimer.setPeriod(2000);//TIMER DE 2 SEGUNDOS PARA DESACTIVAR EL SCHEDULE
   }else{
-    schDurationTimer.setFrecuency(schDuration*60*1000);
+    schDurationTimer.setPeriod(schDuration*60*1000);
   }
   switch(schTipoRepeticion){
 
@@ -942,6 +942,8 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
   modbusTCPServer.holdingRegisterWrite(1240,monthServer);
   modbusTCPServer.holdingRegisterWrite(1241,yearServer);
 
+  // modbusTCPServer.holdingRegisterWrite(1580,1);
+
 }
 //
 //
@@ -980,4 +982,32 @@ void printMemory(){//FUNCION QUE IMPRIME POR SERIAL LA MEMORIA DISPONIBLE
 
 void test(){//FUNCION DE PRUEBA
 
+}
+
+void remoteStartOnLoad(int mod){
+  if(modulos[mod].connect()){
+    modulos[mod].beginTransmission(17920,2);//persisten variable 1 (on load)
+    modulos[mod].modbusWrite(0x00);
+    modulos[mod].modbusWrite(0x01);
+    modulos[mod].endTransmission();
+    modulos[mod].beginTransmission(17922,2);//persistent variable 2(off load)
+    modulos[mod].modbusWrite(0x00);
+    modulos[mod].modbusWrite(0x00);
+    modulos[mod].endTransmission();
+    modulos[mod].stop();
+  }
+}
+
+void remoteStartOffLoad(int mod){
+  if(modulos[mod].connect()){
+    modulos[mod].beginTransmission(17920,2);//persisten variable 1 (on load)
+    modulos[mod].modbusWrite(0x00);
+    modulos[mod].modbusWrite(0x00);
+    modulos[mod].endTransmission();
+    modulos[mod].beginTransmission(17922,2);//persistent variable 2(off load)
+    modulos[mod].modbusWrite(0x00);
+    modulos[mod].modbusWrite(0x01);
+    modulos[mod].endTransmission();
+    modulos[mod].stop();
+  }
 }
