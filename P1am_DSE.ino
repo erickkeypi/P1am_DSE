@@ -12,24 +12,25 @@
 #include <P1AM.h>
 #include <ArduinoRS485.h>
 #include <ArduinoModbus.h>
-#include <TimeEvent.h>
 #include <SPI.h>
 #include <Ethernet.h>
 #include <RTCZero.h>
 #include <MemoryFree.h>
-#include <KontrolMin.h>
-// #include <StateMachine.h>
 #include <SD.h>
+#include <KontrolMin.h>
+#include <TimeEvent.h>
 #include "DSEAlarms.h"
 #include <DSE.h>
+// #include <StateMachine.h>
 
 //////////////////////////////////////////////////////
 //MACROS
 #define NUMBER_OF_DSE 7//SI SON MAS DE 8 MODULOS SE DEBE CONFIGURAR LOS OBJETOs DE EthernetClient y ModbusTCPClient
 #define NUMBER_OF_MODBUS_CLIENTS 1  //CANTIDAD DE CLIENTES QUE PUEDEN CONETARSE POR MODBUS
-#define MODBUS_RECONNECT_TIME 30000 //TIEMPO DE RECONEXION DE LOS MODULOS
+#define MODBUS_RECONNECT_TIME 15000 //TIEMPO DE RECONEXION DE LOS MODULOS
 #define UPDATE_DATE_PERIOD 1296000000 //LA FECHA DE LOS DSE SE ACTUALIZAN CADA 15 DIAS
 #define RTC_UPDATE_TIME 300000 // se actualiza el rtc cada 5 minutos
+#define READ_DSE_PERIOD 500
 
 //MODOS DE LECTURA
 #define READ_MASTER_AND_GEN 0
@@ -88,7 +89,7 @@ TimeEvent rtcUpdate = TimeEvent(10000);//Al principio el RTC trata de actualizar
 
 //////////////////////////////////////////////////////
 //TIMER UTILIZADO PARA LA LECTURA DE LOS REGISTROS DE LOS DSE
-TimeEvent readDseTimer = TimeEvent(1000);
+TimeEvent readDseTimer = TimeEvent(READ_DSE_PERIOD);
 
 //////////////////////////////////////////////////////
 //ARRAYS
@@ -121,7 +122,7 @@ bool generalCommonAlarm = false;
 //////////////////////////////////////////////////////
 //CONFIGURACION ETHERNET-MODBUS
 byte mac[] = {0x60, 0x52, 0xD0, 0x06, 0x68, 0x98};//P1AM-ETH MAC
-IPAddress ip(192, 168, 137, 177);//P1AM-ETH IP
+IPAddress ip(10, 0, 0, 177);//P1AM-ETH IP
 
 //////////////////////////////////////////////////////
 //CONFIGURACION DEL SERVIDOR MODBUS
@@ -167,13 +168,13 @@ unsigned int yearTable = 20;//AÑO DE LECTURA
 //////////////////////////////////////////////////////
 //MODULOS DSE
 DSE modulos[NUMBER_OF_DSE] = {
-  DSE(DSE_8660MKII, IPAddress(192, 168, 137,  126), "SBA1"),
-  DSE(DSE_8610MKII, IPAddress(192, 168, 137,  128), "Gen 1"),
-  DSE(DSE_8660MKII, IPAddress(192, 168, 137,  126), "SBA2"),
-  DSE(DSE_8660MKII, IPAddress(192, 168, 137,  126), "SBB1"),
-  DSE(DSE_8660MKII, IPAddress(192, 168, 137,  126), "SBB2"),
-  DSE(DSE_8610MKII, IPAddress(192, 168, 137,  128), "Gen 2"),
-  DSE(DSE_8610MKII, IPAddress(192, 168, 137,  128), "Gen 3")
+  DSE(DSE_8660MKII, IPAddress(10, 0, 0,  126), "SBA1"),
+  DSE(DSE_8610MKII, IPAddress(10, 0, 0,  128), "Gen 1"),
+  DSE(DSE_8660MKII, IPAddress(10, 0, 0,  126), "SBA2"),
+  DSE(DSE_8660MKII, IPAddress(10, 0, 0,  126), "SBB1"),
+  DSE(DSE_8660MKII, IPAddress(10, 0, 0,  126), "SBB2"),
+  DSE(DSE_8610MKII, IPAddress(10, 0, 0,  128), "Gen 2"),
+  DSE(DSE_8610MKII, IPAddress(10, 0, 0,  128), "Gen 3")
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
