@@ -30,8 +30,7 @@
 #define MODBUS_RECONNECT_TIME 15000 //TIEMPO DE RECONEXION DE LOS MODULOS
 #define UPDATE_DATE_PERIOD 1296000000 //LA FECHA DE LOS DSE SE ACTUALIZAN CADA 15 DIAS
 #define RTC_UPDATE_TIME 300000 // se actualiza el rtc cada 5 minutos
-#define READ_DSE_PERIOD 500
-
+#define READ_DSE_PERIOD 1000 //la lectura de los valores de los DSE es cada segundo
 //MODOS DE LECTURA
 #define READ_MASTER_AND_GEN 0
 #define READ_ONLY_MASTER 1
@@ -42,7 +41,7 @@
 #define SCH_WEEKLY 1
 #define SCH_MONTHLY 2
 #define SCH_DATE 3
-//macros de modos
+//macros de modos para que funcione se debe hacer una logica en el DSE
 #define SCH_TEST_OFF_LOAD false
 #define SCH_TEST_ON_LOAD true
 #define SCH_TRANSITION_OPEN false
@@ -174,7 +173,8 @@ DSE modulos[NUMBER_OF_DSE] = {
   DSE(DSE_8660MKII, IPAddress(10, 0, 0,  126), "SBB1"),
   DSE(DSE_8660MKII, IPAddress(10, 0, 0,  126), "SBB2"),
   DSE(DSE_8610MKII, IPAddress(10, 0, 0,  128), "Gen 2"),
-  DSE(DSE_8610MKII, IPAddress(10, 0, 0,  128), "Gen 3")
+  DSE(DSE_8610MKII, IPAddress(10, 0, 0,  128), "Gen 3")//,
+  //DSE(DSE_8610MKII, IPAddress(10, 0, 0,  128), "Gen 4")
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
