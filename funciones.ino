@@ -448,7 +448,7 @@ void computeSchRegisters(){//FUNCION QUE HACE LOS CALCULOS DEL SCHEDULE
   }else{
     schDuration = schHolding[4];
   }
-
+  
   switch (schMonth){//se restringen los dias dependiendo el mes
     case 1://enero
     case 3://marzo
@@ -510,6 +510,7 @@ void computeSchRegisters(){//FUNCION QUE HACE LOS CALCULOS DEL SCHEDULE
   schHolding[2] = schDay;
   schHolding[3] = schMonth;
   schHolding[4] = schDuration;
+
 
   //////////////////////////////////////////////////////
   //coils
@@ -696,7 +697,7 @@ void readModbusServerHoldingRegisters(){//FUNCION QUE LEE LOS HOLDING
     masterActual=0;
   }
 
-  if(genActual != 1 && genActual != 5 && genActual !=6){//ASEGURANDO QUE EL GEN ACTUAL SEA UNO CORRECTO
+  if(genActual != 1 && genActual != 5 && genActual !=6 && genActual !=7){//ASEGURANDO QUE EL GEN ACTUAL SEA UNO CORRECTO
     genActual=1;
   }
   modbusTCPServer.holdingRegisterWrite(733,constrain(modbusTCPServer.holdingRegisterRead(733),1,32));
@@ -926,6 +927,10 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
       // modbusTCPServer.holdingRegisterWrite(735,modulos[6].priority);
       modbusTCPServer.holdingRegisterWrite(739,modulos[6].qualityMSC);
     }
+    if(!dseErrorComm[7]){
+      // modbusTCPServer.holdingRegisterWrite(735,modulos[6].priority);
+      modbusTCPServer.holdingRegisterWrite(740,modulos[7].qualityMSC);
+    }
   }
   //RESTRINGIENDO EL VALOR DEL MES A MOSTRAR EN EL EVENT LOG
   unsigned int monthServer = modbusTCPServer.holdingRegisterRead(1240);
@@ -981,7 +986,7 @@ void printMemory(){//FUNCION QUE IMPRIME POR SERIAL LA MEMORIA DISPONIBLE
 }
 
 void test(){//FUNCION DE PRUEBA
-  
+
 }
 
 void remoteStartOnLoad(int mod){
