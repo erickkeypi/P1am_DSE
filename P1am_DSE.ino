@@ -277,13 +277,13 @@ void setup(){
 void loop(){
 
   //LOGICA PARA BUS LIVE Y LA ALARMA COMUN GENERAL
+  busLive = generalCommonAlarm = false;
   for (int i=0;i<NUMBER_OF_DSE;i++){
-    busLive = generalCommonAlarm = false;
     if(modulos[i].model == DSE_8660MKII){
-      busLive |= modulos[i].busAvailable;
+      busLive |= modulos[i].busLive;
     }
     else if(modulos[i].model == DSE_8610MKII){
-      busLive |= modulos[i].genBrk;
+      busLive |= modulos[i].busLive;
     }
     generalCommonAlarm |= modulos[i].commonAlarm;
   }

@@ -138,6 +138,10 @@ void readDse(){//esta funcion lee los registros de los DSE
             case 6:
             add=735;
             break;
+
+            case 7:
+            add=736;
+            break;
           }
           unsigned int newPriority = constrain(modbusTCPServer.holdingRegisterRead(add),1,32);
           if(modulos[i].priority != newPriority){//SI LA PRIORIDAD ES DIFERENTE ENTONES SE CAMBIA
@@ -448,7 +452,7 @@ void computeSchRegisters(){//FUNCION QUE HACE LOS CALCULOS DEL SCHEDULE
   }else{
     schDuration = schHolding[4];
   }
-  
+
   switch (schMonth){//se restringen los dias dependiendo el mes
     case 1://enero
     case 3://marzo
