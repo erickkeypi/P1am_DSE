@@ -85,6 +85,7 @@ void writeStringToRegisters(char _string[], unsigned int _add, unsigned int _siz
 }
 
 void readDse(){//esta funcion lee los registros de los DSE
+
   for(int i=0;i<NUMBER_OF_DSE;i++){
     if(dseErrorComm[i]){//SI HAY UN ERROR DE CONEXION CON EL DSE ACTUAL SE SIGUE CON EL SIGUIENTE
       continue;
@@ -138,16 +139,31 @@ void readDse(){//esta funcion lee los registros de los DSE
             case 6:
             add=735;
             break;
+
+            case 7:
+            add=736;
+            break;
           }
-          unsigned int newPriority = constrain(modbusTCPServer.holdingRegisterRead(add),1,32);
-          if(modulos[i].priority != newPriority){//SI LA PRIORIDAD ES DIFERENTE ENTONES SE CAMBIA
-            if(modulos[i].beginTransmission(35104,1)){
-              modulos[i].modbusWrite(newPriority);
-              modulos[i].endTransmission();
-              modulos[i].priority = newPriority;
+
+          newPriority[add-733] = constrain(modbusTCPServer.holdingRegisterRead(add),1,32);
+          if(changePriority){
+            modbusTCPServer.holdingRegisterWrite(add,newPriority[add-733]);
+          } else {
+            if(oldPriority){
+              Serial.println(newPriority[add-733]);
+              if(modulos[i].priority != newPriority[add-733]){//SI LA PRIORIDAD ES DIFERENTE ENTONES SE CAMBIA
+                if(modulos[i].beginTransmission(35104,1)){
+                    modulos[i].modbusWrite(newPriority[add-733]);
+                    modulos[i].endTransmission();
+                    modulos[i].priority = newPriority[add-733];
+                  }
+              // Serial.print(modulos[i].getName());
+              // Serial.println(" Priority changed");
+              }
             }
+            // Serial.println("LOL");
+            modbusTCPServer.holdingRegisterWrite(add,modulos[i].priority);
           }
-          modbusTCPServer.holdingRegisterWrite(add,modulos[i].priority);
         }
       }
 
@@ -161,6 +177,8 @@ void readDse(){//esta funcion lee los registros de los DSE
       writeStringToRegisters("No Conected",109+(i*20),6);
     }
   }
+  // oldPriority = changePriority;
+  oldPriority = changePriority;
 }
 
 void readModuleDate(){//FUNCION QUE LEE LA FECHA DEL MODULO ELEGIDO COMO BASE
@@ -333,7 +351,7 @@ void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUA
         if(oldDseAlarms[i][j]){
           dataWriteSD = modulos[i].getName();
           dataWriteSD += " ";
-          dataWriteSD += DSEAlarmsString[j-1];
+          dataWriteSD += DSEAlarmsString[j];
           alarmsLogger();
         }
       }
@@ -402,7 +420,7 @@ void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUA
       if(!oldDseAlarms[i][j] && modulos[i].alarms[j]){
         dataWriteSD = modulos[i].getName();
         dataWriteSD += " ";
-        dataWriteSD += DSEAlarmsString[j-1];//SE TOMA EL TEXTO DE LA ALARMA DE DSEAlarms.H
+        dataWriteSD += DSEAlarmsString[j];//SE TOMA EL TEXTO DE LA ALARMA DE DSEAlarms.H
         datalogger();//AGREGANDO AL EVENT LOG
         alarmsLogger();//AGREGANDO A LAS ALARMAS ACTIVAS
       }
@@ -510,6 +528,7 @@ void computeSchRegisters(){//FUNCION QUE HACE LOS CALCULOS DEL SCHEDULE
   schHolding[2] = schDay;
   schHolding[3] = schMonth;
   schHolding[4] = schDuration;
+
 
   //////////////////////////////////////////////////////
   //coils
@@ -625,6 +644,8 @@ void readModbusServerCoils(){//FUNCION QUE LEE LOS COILS
   updateModulesDates = modbusTCPServer.coilRead(0);
   masterButtonPress = modbusTCPServer.coilRead(1);
   genButtonPress = modbusTCPServer.coilRead(2);
+  changePriority = modbusTCPServer.coilRead(3);
+
 
   // gen1CommonAlarm = modbusTCPServer.coilRead(21);
   // gen2CommonAlarm = modbusTCPServer.coilRead(22);
@@ -696,7 +717,7 @@ void readModbusServerHoldingRegisters(){//FUNCION QUE LEE LOS HOLDING
     masterActual=0;
   }
 
-  if(genActual != 1 && genActual != 5 && genActual !=6){//ASEGURANDO QUE EL GEN ACTUAL SEA UNO CORRECTO
+  if(genActual != 1 && genActual != 5 && genActual !=6 && genActual !=7){//ASEGURANDO QUE EL GEN ACTUAL SEA UNO CORRECTO
     genActual=1;
   }
   modbusTCPServer.holdingRegisterWrite(733,constrain(modbusTCPServer.holdingRegisterRead(733),1,32));
@@ -839,6 +860,9 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
     modbusTCPServer.holdingRegisterWrite(645,modulos[genActual].KWH>>16);
     modbusTCPServer.holdingRegisterWrite(646,modulos[genActual].KWH);
     modbusTCPServer.holdingRegisterWrite(647,modulos[genActual].mode);
+
+
+    modbusTCPServer.holdingRegisterWrite(657,modulos[genActual].oilTemperature);
     writeStringToRegisters(modulos[genActual].getName(),648,6);
   }
   //ESCRIBIENDO REGISTROS DE LA PANTALLA DE BUS
@@ -926,6 +950,10 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
       // modbusTCPServer.holdingRegisterWrite(735,modulos[6].priority);
       modbusTCPServer.holdingRegisterWrite(739,modulos[6].qualityMSC);
     }
+    if(!dseErrorComm[7]){
+      // modbusTCPServer.holdingRegisterWrite(735,modulos[6].priority);
+      modbusTCPServer.holdingRegisterWrite(740,modulos[7].qualityMSC);
+    }
   }
   //RESTRINGIENDO EL VALOR DEL MES A MOSTRAR EN EL EVENT LOG
   unsigned int monthServer = modbusTCPServer.holdingRegisterRead(1240);
@@ -962,12 +990,15 @@ void utilidades(){
     Serial.print(F("> Frame time(us): "));
     Serial.println(frame/frameNumbers);
 
+
     //IMPRIMIENDO LA MEMORIA DISPONIBLE
     printMemory();
 
     Serial.println();
     frame = frameNumbers = 0;
   }
+
+
 }
 
 void printMemory(){//FUNCION QUE IMPRIME POR SERIAL LA MEMORIA DISPONIBLE
@@ -981,7 +1012,7 @@ void printMemory(){//FUNCION QUE IMPRIME POR SERIAL LA MEMORIA DISPONIBLE
 }
 
 void test(){//FUNCION DE PRUEBA
-  
+
 }
 
 void remoteStartOnLoad(int mod){

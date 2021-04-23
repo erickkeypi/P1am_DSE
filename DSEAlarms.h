@@ -157,146 +157,182 @@ void asignAlarm(){
   DSEAlarmsString[1] = F("LOW OIL PRESSURE");
   DSEAlarmsString[2] = F("HIGH COOLANT TEMPERATURE");
   DSEAlarmsString[3] = F("LOW COOLANT TEMPERATURE");
+
   DSEAlarmsString[4] = F("UNDER SPEED");
   DSEAlarmsString[5] = F("OVER SPEED");
   DSEAlarmsString[6] = F("GENERATOR UNDER FREQUENCY");
   DSEAlarmsString[7] = F("GENERATOR OVER FREQUENCY");
+
   DSEAlarmsString[8] = F("GENERATOR LOW VOLTAGE");
   DSEAlarmsString[9] = F("GENERATOR HIGH VOLTAGE");
   DSEAlarmsString[10] = F("BATTERY LOW VOLTAGE");
   DSEAlarmsString[11] = F("BATTERY HIGH VOLTAGE");
+
   DSEAlarmsString[12] = F("CHARGE ALTERNATOR FAILURE");
   DSEAlarmsString[13] = F("FAIL TO START");
   DSEAlarmsString[14] = F("FAIL TO STOP");
   DSEAlarmsString[15] = F("GENERATOR FAIL TO CLOSE");
+
   DSEAlarmsString[16] = F("MAINS FAIL TO CLOSE");
   DSEAlarmsString[17] = F("OIL PRESSURE SENDER FAULT");
   DSEAlarmsString[18] = F("LOSS OF MAGNETIC PICK UP");
   DSEAlarmsString[19] = F("MAG PICKUP OPEN CIRCUIT");
+
   DSEAlarmsString[20] = F("GENERATOR HIGH CURRENT");
   DSEAlarmsString[21] = F("CALIBRATION LOST");
   DSEAlarmsString[22] = F("LOW FUEL LEVEL");
   DSEAlarmsString[23] = F("CAN ECU WARNING");
+
   DSEAlarmsString[24] = F("CAN ECU SHUTDOWN");
   DSEAlarmsString[25] = F("CAN ECU DATA FAIL");
   DSEAlarmsString[26] = F("LOW OIL LEVEL SWITCH");
   DSEAlarmsString[27] = F("HIGH TEMPERATURE SWITCH");
+
   DSEAlarmsString[28] = F("LOW FUEL LEVEL SWITCH");
   DSEAlarmsString[29] = F("EXPANSION UNIT WATCHDOG ");
   DSEAlarmsString[30] = F("KW OVERLOAD");
   DSEAlarmsString[31] = F("NEGATIVE PHASE SEQ CURRENT");
+
   DSEAlarmsString[32] = F("EARTH FAULT TRIP");
   DSEAlarmsString[33] = F("GENERATOR PHASE ROTATION");
   DSEAlarmsString[34] = F("AUTO VOLTAGE SENSE FAIL");
   DSEAlarmsString[35] = F("MAINTENANCE");
+
   DSEAlarmsString[36] = F("LOADING FREQUENCY");
   DSEAlarmsString[37] = F("LOADING VOLTAGE");
   DSEAlarmsString[38] = F("FUEL USAGE RUNNING");
   DSEAlarmsString[39] = F("FUEL USAGE STOPPED");
+
   DSEAlarmsString[40] = F("PROTECTIONS DISABLED");
   DSEAlarmsString[41] = F("PROTECTIONS BLOCKED");
   DSEAlarmsString[42] = F("GEN BREAKER FAILED TO OPEN");
   DSEAlarmsString[43] = F("MAINS BKR FAILED TO OPEN");
+
   DSEAlarmsString[44] = F("BUS BREAKER FAILED TO CLOSE");
   DSEAlarmsString[45] = F("BUS BREAKER FAILED TO OPEN");
   DSEAlarmsString[46] = F("GENERATOR REV POWER ");
   DSEAlarmsString[47] = F("SHORT CIRCUIT");
+
   DSEAlarmsString[48] = F("AIR FLAP CLOSED");
   DSEAlarmsString[49] = F("FAILURE TO SYNC");
   DSEAlarmsString[50] = F("BUS LIVE");
   DSEAlarmsString[51] = F("BUS NOT LIVE");
+
   DSEAlarmsString[52] = F("BUS PHASE ROTATION");
   DSEAlarmsString[53] = F("PRIORITY SELECTION ERROR");
   DSEAlarmsString[54] = F("MSC DATA ERROR");
   DSEAlarmsString[55] = F("MSC ID ERROR");
+
   DSEAlarmsString[56] = F("BUS LOW VOLTAGE");
   DSEAlarmsString[57] = F("BUS HIGH VOLTAGE");
   DSEAlarmsString[58] = F("BUS LOW FREQUENCY");
   DSEAlarmsString[59] = F("BUS HIGH FREQUENCY");
+
   DSEAlarmsString[60] = F("MSC FAILURE");
   DSEAlarmsString[61] = F("MSC TOO FEW SETS");
   DSEAlarmsString[62] = F("MSC S INHIBITED");
   DSEAlarmsString[63] = F("MSC OLD VER UNITS ON THE BUS");
+
   DSEAlarmsString[64] = F("MAINS REV PWR/MAINS EXP");
   DSEAlarmsString[65] = F("MINIMUM SETS NOT REACHED");
   DSEAlarmsString[66] = F("INSUFFICIENT CAPACITY");
   DSEAlarmsString[67] = F("OUT OF SYNC");
+
   DSEAlarmsString[68] = F("ALTERNATIVE AUX MAINS FAIL");
   DSEAlarmsString[69] = F("LOSS OF EXCITATION");
   DSEAlarmsString[70] = F("MAINS ROCOF");
   DSEAlarmsString[71] = F("MAINS VECTOR SHIFT");
+
   DSEAlarmsString[72] = F("MAINS DEC LOW FREQUENCY");
   DSEAlarmsString[73] = F("MAINS DEC HIGH FREQUENCY");
   DSEAlarmsString[74] = F("MAINS DEC LOW VOLTAGE");
   DSEAlarmsString[75] = F("MAINS DEC HIGH VOLTAGE");
+
   DSEAlarmsString[76] = F("MAINS DEC COMBINED ");
   DSEAlarmsString[77] = F("INLET TEMPERATURE");
   DSEAlarmsString[78] = F("MAINS PHASE ROT  IDENTIFIER");
   DSEAlarmsString[79] = F("AVR MAX TRIM LIMIT");
+
   DSEAlarmsString[80] = F("HIGH COOLANT TEMP ELEC TRIP ");
   DSEAlarmsString[81] = F("TEMP SENDER OPEN CIRCUIT");
   DSEAlarmsString[82] = F("OUT OF SYNC BUS");
   DSEAlarmsString[83] = F("OUT OF SYNC MAINS");
+
   DSEAlarmsString[84] = F("BUS 1 LIVE");
   DSEAlarmsString[85] = F("BUS 1 PHASE ROTATION");
   DSEAlarmsString[86] = F("BUS 2 LIVE");
   DSEAlarmsString[87] = F("BUS 2 PHASE ROTATION");
+
   DSEAlarmsString[88] = F("UNIMPLEMENTED");
   DSEAlarmsString[89] = F("ECU PROTECT");
   DSEAlarmsString[90] = F("ECU MALFUNCTION");
   DSEAlarmsString[91] = F("INDICATION");
+
   DSEAlarmsString[92] = F("UNIMPLEMENTED");
   DSEAlarmsString[93] = F("UNIMPLEMENTED");
   DSEAlarmsString[94] = F("HEST ACTIVE");
   DSEAlarmsString[95] = F("DPTC FILTER");
+
   DSEAlarmsString[96] = F("WATER IN FUEL");
   DSEAlarmsString[97] = F("ECU HEATER");
   DSEAlarmsString[98] = F("ECU COOLER");
   DSEAlarmsString[99] = F("UNIMPLEMENTED");
+
   DSEAlarmsString[100] = F("UNIMPLEMENTED");
   DSEAlarmsString[101] = F("UNIMPLEMENTED");
   DSEAlarmsString[102] = F("UNIMPLEMENTED");
   DSEAlarmsString[103] = F("UNIMPLEMENTED");
+
   DSEAlarmsString[104] = F("UNIMPLEMENTED");
   DSEAlarmsString[105] = F("UNIMPLEMENTED");
   DSEAlarmsString[106] = F("UNIMPLEMENTED");
   DSEAlarmsString[107] = F("UNIMPLEMENTED");
+
   DSEAlarmsString[108] = F("HIGH FUEL LEVEL");
   DSEAlarmsString[109] = F("UNIMPLEMENTED");
   DSEAlarmsString[110] = F("MODULE COMMUNICATION FAIL");
   DSEAlarmsString[111] = F("BUS MODULE WARNING");
+
   DSEAlarmsString[112] = F("BUS MODULE TRIP");
   DSEAlarmsString[113] = F("MAINS MODULE WARNING");
   DSEAlarmsString[114] = F("MAINS MODULE TRIP");
   DSEAlarmsString[115] = F("LOAD LIVE");
+
   DSEAlarmsString[116] = F("LOAD NOT LIVE");
   DSEAlarmsString[117] = F("LOAD PHASE ROTATION");
   DSEAlarmsString[118] = F("DEF LEVEL LOW");
   DSEAlarmsString[119] = F("SCR INDUCEMENT");
+
   DSEAlarmsString[120] = F("HEATER SENSOR FAILURE");
   DSEAlarmsString[121] = F("MAINS OVER ZERO SEQ VOLTS");
   DSEAlarmsString[122] = F("MAINS UNDER POS SEQ VOLTS");
   DSEAlarmsString[123] = F("MAINS OVER NEG SEQ VOLTS");
+
   DSEAlarmsString[124] = F("MAINS ASYMMETRY HIGH");
   DSEAlarmsString[125] = F("BUS OVER ZERO SEQ VOLTS");
   DSEAlarmsString[126] = F("BUS UNDER POSITIVE SEQ VOLTS");
   DSEAlarmsString[127] = F("BUS OVER NEGATIVE SEQ VOLTS");
+
   DSEAlarmsString[128] = F("BUS ASYMMETRY HIGH");
   DSEAlarmsString[129] = F("E-TRIP STOP INHIBITED");
   DSEAlarmsString[130] = F("FUEL TANK BUND LEVEL HIGH");
   DSEAlarmsString[131] = F("MSC LINK 1 DATA ERROR");
+
   DSEAlarmsString[132] = F("MSC LINK 2 DATA ERROR");
   DSEAlarmsString[133] = F("BUS 2 LOW VOLTAGE");
   DSEAlarmsString[134] = F("BUS 2 HIGH VOLTAGE");
   DSEAlarmsString[135] = F("BUS 2 LOW FREQUENCY");
+
   DSEAlarmsString[136] = F("BUS 2 HIGH FREQUENCY");
   DSEAlarmsString[137] = F("MSC LINK 1 FAILURE");
   DSEAlarmsString[138] = F("MSC LINK 2 FAILURE");
   DSEAlarmsString[139] = F("MSC LINK 1 TOO FEW SETS");
+
   DSEAlarmsString[140] = F("MSC LINK 2 TOO FEW SETS");
   DSEAlarmsString[141] = F("MSC LINK 1 AND 2 FAILURE");
   DSEAlarmsString[142] = F("ELECTRICAL TRIP FROM 8660");
   DSEAlarmsString[143] = F("AVR CAN RED STOP LAMP FAULT");
+  
   DSEAlarmsString[144] = F("GEN OVER ZERO SEQ VOLTS");
   DSEAlarmsString[145] = F("GEN UNDER POS SEQ VOLTS");
   DSEAlarmsString[146] = F("GEN OVER NEG SEQ VOLTS");
