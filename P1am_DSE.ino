@@ -106,6 +106,7 @@ unsigned int genScreen[60];//VARIABLES PARA LA PANTALLA DE GEN
 unsigned int genActual = 1;//GEN DEL CUAL SE ESTA LEYENDO LOS VALORES
 bool genButtonPress = false;//ESTADO DE BOTON DE COMANDO DE GEN
 
+bool muteAllAlarms = false;
 //////////////////////////////////////////////////////
 //MODOS DE LECTURA PARA HACER QUE SOLO LEA MASTERS O GENERADORES
 int modoLectura = READ_MASTER_AND_GEN;
@@ -177,6 +178,8 @@ DSE modulos[NUMBER_OF_DSE] = {
   DSE(DSE_8610MKII, IPAddress(10, 0, 0,  18), "Gen 4")
 };
 
+
+
 bool changePriority = 0;
 bool oldPriority = 0;
 unsigned int newPriority1 =1;
@@ -185,7 +188,7 @@ unsigned int newPriority3 =1;
 unsigned int newPriority4 =1;
 unsigned int newPriority[4] = {1,1,1,1};
 
-
+unsigned long totalMainsKW = 0;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////SETUP////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////

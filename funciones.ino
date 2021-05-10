@@ -1,3 +1,4 @@
+//////////////////////////////////////////////////////////////
 void initializeArrays(){//FUNCION QUE INICIALIZA LOS ARRAYS
   Serial.println(F("> Arrays inicializados"));
   eraseErrorComm();
@@ -8,13 +9,13 @@ void initializeArrays(){//FUNCION QUE INICIALIZA LOS ARRAYS
     }
   }
 }
-
+//////////////////////////////////////////////////////////////
 void eraseErrorComm(){
   for(int i=0; i<NUMBER_OF_DSE; i++){
     dseErrorComm[i]=false;//SE DESACTIVA EL ERROR DE CONEXION Y SE INTENTA LA CONEXION
   }
 }
-
+//////////////////////////////////////////////////////////////
 void applyReadMode(){
   for(int d=0;d<NUMBER_OF_DSE;d++){
     switch (modoLectura){//SE CONECTAN LOS MODULOS DE ACUERDO AL MODO DE LECTURA
@@ -40,7 +41,7 @@ void applyReadMode(){
     }
   }
 }
-
+//////////////////////////////////////////////////////////////
 void handleModbusClients(){//funcion que maneja la conexion de los clientes
   EthernetClient newClient = server.accept(); //listen for incoming clients
   if (newClient) { //process new connection if possible
@@ -77,13 +78,13 @@ void handleModbusClients(){//funcion que maneja la conexion de los clientes
     }
   }
 }
-
+//////////////////////////////////////////////////////////////
 void writeStringToRegisters(char _string[], unsigned int _add, unsigned int _size){
   for(int i=0;i<_size;i++){
     modbusTCPServer.holdingRegisterWrite(_add+i,_string[i*2]<<8 | _string[(i*2)+1]);
   }
 }
-
+//////////////////////////////////////////////////////////////
 void readDse(){//esta funcion lee los registros de los DSE
 
   for(int i=0;i<NUMBER_OF_DSE;i++){
@@ -92,6 +93,19 @@ void readDse(){//esta funcion lee los registros de los DSE
     }
     if(modulos[i].connect()){
       modulos[i].update();
+
+      if(muteAllAlarms){//mute all alarms
+        if(modulos[masterActual].beginTransmission(4104,2)){
+          modulos[masterActual].modbusWrite(17850);
+          modulos[masterActual].modbusWrite(29829);
+          modulos[masterActual].endTransmission();
+          Serial.print(F("> "));
+          Serial.print(modulos[masterActual].getName());
+          Serial.println(F(" system key pressed"));
+        } else{
+          dseErrorComm[masterActual]=true;
+        }
+      }
 
       if(masterButtonPress && i == masterActual){//SI SE PRESIONA UN BOTON DE COMANDO ESTE SE ENVIA AL MODULO DSE
         if(modulos[masterActual].beginTransmission(4104,2)){
@@ -179,8 +193,10 @@ void readDse(){//esta funcion lee los registros de los DSE
   }
   // oldPriority = changePriority;
   oldPriority = changePriority;
+  muteAllAlarms = false;
+  modbusTCPServer.coilWrite(4,muteAllAlarms);
 }
-
+//////////////////////////////////////////////////////////////
 void readModuleDate(){//FUNCION QUE LEE LA FECHA DEL MODULO ELEGIDO COMO BASE
   applyReadMode();
   //LEYENDO LA FECHA DEL MODULO BASE Y ACTUALIZANDO EL RTC
@@ -198,23 +214,23 @@ void readModuleDate(){//FUNCION QUE LEE LA FECHA DEL MODULO ELEGIDO COMO BASE
     Serial.println(F("> Error al actualizar RTC. Intentando nuevamente en 10 segundos"));
   }
 }
-
+//////////////////////////////////////////////////////////////
 String twoDigits(long d){//funcion que muestra los numeros siempre con dos digitos
   if(d<10){
     return "0" + String(d);
   }
   return String(d);
 }
-
+//////////////////////////////////////////////////////////////
 String getTime(){//funcion que imprime la hora por serial
   return "Time: " + twoDigits(rtc.getHours()) + ":" + twoDigits(rtc.getMinutes()) + ":" + twoDigits(rtc.getSeconds());
 }
-
+//////////////////////////////////////////////////////////////
 String getDate(){//funcion que imprime la fecha por serial
   return "Date: " + twoDigits(rtc.getDay()) + "/" + twoDigits(rtc.getMonth()) + "/" + twoDigits(rtc.getYear());
 }
 
-
+//////////////////////////////////////////////////////////////
 void updateDseDates(){//FUNCION QUE ACTUALIZA LA FECHA DE LOS DSE TOMANDO UN MODULO BASE
 
   for(int i=0;i<NUMBER_OF_DSE;i++){
@@ -259,7 +275,7 @@ void updateDseDates(){//FUNCION QUE ACTUALIZA LA FECHA DE LOS DSE TOMANDO UN MOD
     }
   }
 }
-
+//////////////////////////////////////////////////////////////
 void writeAlarmsLineModbus(unsigned int _reg,unsigned int _add){//FUNCION PARA ESCRIBIR UNA LINEA DE TEXTO EN LOS REGISTROS MODBUS
   int primeraComa = 0;//GUARDA EL INDICE DE LA PRIMERA COMA
   int segundaComa = 0;//GUARDA EL INDICE DE LA SEGUNDA COMA
@@ -316,7 +332,7 @@ void writeAlarmsLineModbus(unsigned int _reg,unsigned int _add){//FUNCION PARA E
     modbusTCPServer.holdingRegisterWrite(_add+100+j+(_reg*15),buff[j*2] <<8 | buff[j*2+1]);
   }
 }
-
+//////////////////////////////////////////////////////////////
 void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUARDA
 
   static bool alarmaDesactivada = false;
@@ -428,7 +444,7 @@ void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUA
     }
   }
 }
-
+//////////////////////////////////////////////////////////////
 void computeSchRegisters(){//FUNCION QUE HACE LOS CALCULOS DEL SCHEDULE
   //los siguientes "if" hacen que si se disminuye la cantidad menos que el limite inferior esta pasa a su limite superior
   // si es menor a 0 pasa a 23 y si es mayor a 23 pasa a 0
@@ -638,14 +654,14 @@ void computeSchRegisters(){//FUNCION QUE HACE LOS CALCULOS DEL SCHEDULE
 
 }
 
-
+//////////////////////////////////////////////////////////////
 ////MODBUS
 void readModbusServerCoils(){//FUNCION QUE LEE LOS COILS
   updateModulesDates = modbusTCPServer.coilRead(0);
   masterButtonPress = modbusTCPServer.coilRead(1);
   genButtonPress = modbusTCPServer.coilRead(2);
   changePriority = modbusTCPServer.coilRead(3);
-
+  muteAllAlarms = modbusTCPServer.coilRead(4);
 
   // gen1CommonAlarm = modbusTCPServer.coilRead(21);
   // gen2CommonAlarm = modbusTCPServer.coilRead(22);
@@ -661,7 +677,7 @@ void readModbusServerCoils(){//FUNCION QUE LEE LOS COILS
     schCoils[i] = modbusTCPServer.coilRead(i+30);
   }
 }
-
+//////////////////////////////////////////////////////////////
 void writeModbusCoils(){//FUNCION QUE ESCRIBE LOS COILS
   modbusTCPServer.coilWrite(0,updateModulesDates);
   modbusTCPServer.coilWrite(1,masterButtonPress);
@@ -677,7 +693,7 @@ void writeModbusCoils(){//FUNCION QUE ESCRIBE LOS COILS
     modbusTCPServer.coilWrite(i+50,dseErrorComm[i]);
   }
 }
-//
+////////////////////////////////////////////////////////////////
 void writeModbusDiscreteInputs() {//FUNCION QUE ESCRIBE LAS ENTRADAS DISCRETAS
   for(int i=0;i<NUMBER_OF_DSE;i++){
     modbusTCPServer.discreteInputWrite((i*10),modulos[i].mainsAvailable);
@@ -696,11 +712,11 @@ void writeModbusDiscreteInputs() {//FUNCION QUE ESCRIBE LAS ENTRADAS DISCRETAS
     modbusTCPServer.discreteInputWrite(100+i,dseErrorComm[i]);
   }
 }
-//
+////////////////////////////////////////////////////////////////
 void writeModbusInputRegisters() {//FUNCION QUE ESCRIBE LOS INPUTS
 
 }
-
+//////////////////////////////////////////////////////////////
 void readModbusServerHoldingRegisters(){//FUNCION QUE LEE LOS HOLDING
 
   for(int i=0;i<5;i++){//leyendo registros del schedule
@@ -724,15 +740,16 @@ void readModbusServerHoldingRegisters(){//FUNCION QUE LEE LOS HOLDING
   modbusTCPServer.holdingRegisterWrite(734,constrain(modbusTCPServer.holdingRegisterRead(734),1,32));
   modbusTCPServer.holdingRegisterWrite(735,constrain(modbusTCPServer.holdingRegisterRead(735),1,32));
 }
-//
+////////////////////////////////////////////////////////////////
 void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
   //escribiendo registros del schedule
   for(int i=0;i<5;i++){
     modbusTCPServer.holdingRegisterWrite(i+10,schHolding[i]);
   }
   //ESCRIBIENDO REGISTROS DE LA PANTALLA PRINCIPAL
+  totalMainsKW = 0;
   for(int i=0;i<NUMBER_OF_DSE;i++){
-    modbusTCPServer.holdingRegisterWrite(100+(i*20),modulos[i].HZ);
+    modbusTCPServer.holdingRegisterWrite(100+(i*20),modulos[i].HZ);//HZ
     modbusTCPServer.holdingRegisterWrite(101+(i*20),modulos[i].V>>16);
     modbusTCPServer.holdingRegisterWrite(102+(i*20),modulos[i].V);
     modbusTCPServer.holdingRegisterWrite(103+(i*20),modulos[i].KW>>16);
@@ -741,6 +758,9 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
     modbusTCPServer.holdingRegisterWrite(106+(i*20),modulos[i].KVAR>>16);
     modbusTCPServer.holdingRegisterWrite(107+(i*20),modulos[i].KVAR);
     modbusTCPServer.holdingRegisterWrite(108+(i*20),modulos[i].mode);
+    // if(modulos[i].model == DSE_8660MKII){
+    //   totalMainsKW += modulos[i].KW;
+    // }
   }
 
   //ESCRIBIENDO LOS REGISTROS DE LA PANTALLA DE MASTER
@@ -860,9 +880,8 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
     modbusTCPServer.holdingRegisterWrite(645,modulos[genActual].KWH>>16);
     modbusTCPServer.holdingRegisterWrite(646,modulos[genActual].KWH);
     modbusTCPServer.holdingRegisterWrite(647,modulos[genActual].mode);
-
-
     modbusTCPServer.holdingRegisterWrite(657,modulos[genActual].oilTemperature);
+    modbusTCPServer.holdingRegisterWrite(255,modulos[genActual].analogeInputD);
     writeStringToRegisters(modulos[genActual].getName(),648,6);
   }
   //ESCRIBIENDO REGISTROS DE LA PANTALLA DE BUS
@@ -974,7 +993,7 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
 
 }
 //
-//
+////////////////////////////////////////////////////////////////
 void utilidades(){
   //CALCULANDO EL TIEMPO DE EJECUCION DE UN CICLO DE PROGRAMA (FRAME)
   static unsigned int frameNumbers =0;
@@ -996,11 +1015,16 @@ void utilidades(){
 
     Serial.println();
     frame = frameNumbers = 0;
+
+    //test
+    Serial.print("Nivel tanque: ");
+    unsigned int tes = modulos[1].analogeInputD;
+    Serial.println(modbusTCPServer.holdingRegisterRead(255));
   }
 
 
 }
-
+//////////////////////////////////////////////////////////////
 void printMemory(){//FUNCION QUE IMPRIME POR SERIAL LA MEMORIA DISPONIBLE
   Serial.print(F("> MEM FREE: "));
   Serial.print(freeMemory(), DEC);
@@ -1010,11 +1034,11 @@ void printMemory(){//FUNCION QUE IMPRIME POR SERIAL LA MEMORIA DISPONIBLE
   Serial.print(percent,2);
   Serial.println("%");
 }
-
+//////////////////////////////////////////////////////////////
 void test(){//FUNCION DE PRUEBA
 
 }
-
+//////////////////////////////////////////////////////////////
 void remoteStartOnLoad(int mod){
   if(modulos[mod].connect()){
     modulos[mod].beginTransmission(17920,2);//persisten variable 1 (on load)
@@ -1028,7 +1052,7 @@ void remoteStartOnLoad(int mod){
     modulos[mod].stop();
   }
 }
-
+//////////////////////////////////////////////////////////////
 void remoteStartOffLoad(int mod){
   if(modulos[mod].connect()){
     modulos[mod].beginTransmission(17920,2);//persisten variable 1 (on load)
