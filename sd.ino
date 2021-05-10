@@ -109,7 +109,6 @@ void datalogger(){//FUNCION PARA EL DATALOGGER DEL EVENT LOG
 }
 
 void dataloggerRead(int _month, int _year){//FUNCION PARA ESCRIBIR POR MODBUS EL EVENT LOG
-
   String filename = "ALARMS/" +  String(_month) + "_" + String(_year) + ".csv";//EL ARCHIVO SE BUSCA DE ACUERDO AL MES Y AÑO ENVIADO POR ARGUMENTO A LA FUNCION
 
   if(!SD.exists(filename)){//SI NO EXISTE EL ARCHIVO SE REINICIA EL DATALOGGER
@@ -159,6 +158,7 @@ void dataloggerRead(int _month, int _year){//FUNCION PARA ESCRIBIR POR MODBUS EL
     }
     SD_Begin();//REINICIANDO LA MICRO SD
   }
+
 }
 
 void alarmsLogger(){//FUNCION PARA EL DATALOGGER DE LAS ALARMAS ACTIVAS
@@ -209,6 +209,7 @@ void alarmsLogger(){//FUNCION PARA EL DATALOGGER DE LAS ALARMAS ACTIVAS
 }
 
 void alarmsLoggerRead(){//FUNCION PARA ESCRIBIR POR MODBUS LAS ALARMAS ACTIVAS
+
   String filename = F("ACTIVE.csv");
 
   if(!SD.exists(filename)){//SI EL ARCHIVO NO EXISTE SE REINICIA EL DATALOGGER
@@ -258,4 +259,5 @@ void alarmsLoggerRead(){//FUNCION PARA ESCRIBIR POR MODBUS LAS ALARMAS ACTIVAS
     }
     SD_Begin();//REINICIANDO LA MICRO SD
   }
+
 }

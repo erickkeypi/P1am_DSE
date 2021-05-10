@@ -95,12 +95,12 @@ void readDse(){//esta funcion lee los registros de los DSE
       modulos[i].update();
 
       if(muteAllAlarms){//mute all alarms
-        if(modulos[masterActual].beginTransmission(4104,2)){
-          modulos[masterActual].modbusWrite(17850);
-          modulos[masterActual].modbusWrite(29829);
-          modulos[masterActual].endTransmission();
+        if(modulos[i].beginTransmission(4104,2)){
+          modulos[i].modbusWrite(35706);
+          modulos[i].modbusWrite(29829);
+          modulos[i].endTransmission();
           Serial.print(F("> "));
-          Serial.print(modulos[masterActual].getName());
+          Serial.print(modulos[i].getName());
           Serial.println(F(" system key pressed"));
         } else{
           dseErrorComm[masterActual]=true;
