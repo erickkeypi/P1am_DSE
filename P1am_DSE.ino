@@ -27,7 +27,7 @@
 //MACROS
 #define NUMBER_OF_DSE 8//SI SON MAS DE 8 MODULOS SE DEBE CONFIGURAR LOS OBJETOs DE EthernetClient y ModbusTCPClient
 #define NUMBER_OF_MODBUS_CLIENTS 1  //CANTIDAD DE CLIENTES QUE PUEDEN CONETARSE POR MODBUS
-#define MODBUS_RECONNECT_TIME 150000 //TIEMPO DE RECONEXION DE LOS MODULOS
+#define MODBUS_RECONNECT_TIME 15000 //TIEMPO DE RECONEXION DE LOS MODULOS
 #define UPDATE_DATE_PERIOD 1296000000 //LA FECHA DE LOS DSE SE ACTUALIZAN CADA 15 DIAS
 #define RTC_UPDATE_TIME 300000 // se actualiza el rtc cada 5 minutos
 #define READ_DSE_PERIOD 1000 //la lectura de los valores de los DSE es cada segundo
@@ -168,8 +168,8 @@ unsigned int yearTable = 20;//AÑO DE LECTURA
 //////////////////////////////////////////////////////
 //MODULOS DSE
 DSE modulos[NUMBER_OF_DSE] = {
-  DSE(DSE_8660MKII, IPAddress(10, 0, 0,  126), "SBA1"),//11
-  DSE(DSE_8610MKII, IPAddress(10, 0, 0,  128), "Gen 1"),//15
+  DSE(DSE_8660MKII, IPAddress(10, 0, 0,  11), "SBA1"),//11
+  DSE(DSE_8610MKII, IPAddress(10, 0, 0,  15), "Gen 1"),//15
   DSE(DSE_8660MKII, IPAddress(10, 0, 0,  12), "SBA2"),
   DSE(DSE_8660MKII, IPAddress(10, 0, 0,  13), "SBB2"),
   DSE(DSE_8660MKII, IPAddress(10, 0, 0,  14), "SBB1"),

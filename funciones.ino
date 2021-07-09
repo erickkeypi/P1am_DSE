@@ -446,212 +446,212 @@ void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUA
 }
 //////////////////////////////////////////////////////////////
 void computeSchRegisters(){//FUNCION QUE HACE LOS CALCULOS DEL SCHEDULE
-  //los siguientes "if" hacen que si se disminuye la cantidad menos que el limite inferior esta pasa a su limite superior
-  // si es menor a 0 pasa a 23 y si es mayor a 23 pasa a 0
-  //la forma en que esta implementado es porque la variable es sin signo osea que ninca va a ser menor a 0
-  //cuando se disminuye desde 0 entonces pasa a ser un numero muy grande
-  //por lo que solo basta detectar que sea un numero muy grande
-  if(schHolding[0]>1000){//restringiendo las horas
-    schHour = 23;
-  } else if (schHolding[0]>23){
-    schHour = 0;
-  } else{
-    schHour = schHolding[0];
-  }
-
-  if(schHolding[1]>1000){//restringiendo los minutos
-    schMinute = 59;
-  } else if (schHolding[1]>59){
-    schMinute = 0;
-  }else{
-    schMinute = schHolding[1];
-  }
-
-  if(schHolding[3]<1){//restringiendo los meses
-    schMonth = 12;
-  } else if (schHolding[3]>12){
-    schMonth = 1;
-  }else{
-    schMonth = schHolding[3];
-  }
-
-  if(schHolding[4]>50000){//duracion entre 0 y 30 dias (minutos)
-    schDuration = 43200;
-  } else if (schHolding[4]>43200){
-    schDuration = 0;
-  }else{
-    schDuration = schHolding[4];
-  }
-
-  switch (schMonth){//se restringen los dias dependiendo el mes
-    case 1://enero
-    case 3://marzo
-    case 5://mayo
-    case 7://julio
-    case 8://agosto
-    case 10://octubre
-    case 12://diciembre
-    //se restringen los dias a 31 cuando son los meses correspondientes
-    if(schHolding[2]<1){
-      schDay = 31;
-    } else if (schHolding[2]>31){
-      schDay = 1;
-    }else{
-      schDay = schHolding[2];
-    }
-    break;
-
-    case 2://febrero
-    //se restringe a 28 dias si es febrero
-    if(schHolding[2]<1){
-      schDay = 28;
-    } else if (schHolding[2]>28){
-      schDay = 1;
-    }else{
-      schDay = schHolding[2];
-    }
-    break;
-
-    case 4://abril
-    case 6://junio
-    case 9://septiembre
-    case 11://noviembre
-    //se restringe a 30 dias en los meses correspondientes
-    if(schHolding[2]<1){
-      schDay = 30;
-    } else if (schHolding[2]>30){
-      schDay = 1;
-    }else{
-      schDay = schHolding[2];
-    }
-    break;
-
-    default:
-    //se restringe a 30 dias por defecto
-    if(schHolding[2]<1){
-      schDay = 30;
-    } else if (schHolding[2]>30){
-      schDay = 1;
-    }else{
-      schDay = schHolding[2];
-    }
-    break;
-
-  }
-  //GUARDANDO RESULTADO EN EL ARRAY
-  schHolding[0] = schHour;
-  schHolding[1] = schMinute;
-  schHolding[2] = schDay;
-  schHolding[3] = schMonth;
-  schHolding[4] = schDuration;
-
-
-  //////////////////////////////////////////////////////
-  //coils
-
-  //enable
-  schEnable = schCoils[7];
-
-  //test off/on load
-  if(schCoils[13] && schTestLoad == SCH_TEST_ON_LOAD){//cambiando a test off load
-    schTestLoad = SCH_TEST_OFF_LOAD;
-    schCoils[14]=false;
-  }
-  if(schCoils[14] && schTestLoad == SCH_TEST_OFF_LOAD){//cambiando a test on load
-    schTestLoad = SCH_TEST_ON_LOAD;
-    schCoils[13]=false;
-  }
-
-  //transition open/closed
-  if(schCoils[15] && schTransition == SCH_TRANSITION_CLOSED){//cambiando a transition open
-    schTransition = SCH_TRANSITION_OPEN;
-    schCoils[16]=false;
-  }
-  if(schCoils[16] && schTransition == SCH_TRANSITION_OPEN){//cambiando a transition closed
-    schTransition = SCH_TRANSITION_CLOSED;
-    schCoils[15]=false;
-  }
-  //load demand Inhibit
-  schLoadDemandInhibit = schCoils[17];
-
-  //tipo repeticion
-  if(schCoils[9] && schTipoRepeticion !=SCH_DAILY){//activar la repeticion diaria y desactivando las demas
-    schTipoRepeticion = SCH_DAILY;
-    schCoils[10] = false;
-    schCoils[11] = false;
-    schCoils[12] = false;
-  }
-  if(schCoils[10] && schTipoRepeticion !=SCH_WEEKLY){//activar la repeticion semanal y desactivando las demas
-    schTipoRepeticion = SCH_WEEKLY;
-    schCoils[9] = false;
-    schCoils[11] = false;
-    schCoils[12] = false;
-  }
-  if(schCoils[11] && schTipoRepeticion !=SCH_MONTHLY){//activar la repeticion mensual y desactivando las demas
-    schTipoRepeticion = SCH_MONTHLY;
-    schCoils[10] = false;
-    schCoils[9] = false;
-    schCoils[12] = false;
-  }
-  if(schCoils[12] && schTipoRepeticion !=SCH_DATE){//activar activacion en fecha y desactivando las demas
-    schTipoRepeticion = SCH_DATE;
-    schCoils[10] = false;
-    schCoils[11] = false;
-    schCoils[9] = false;
-  }
-
-  //computando si se activa el schedule
-  if(schDuration == 0){
-    schDurationTimer.setPeriod(2000);//TIMER DE 2 SEGUNDOS PARA DESACTIVAR EL SCHEDULE
-  }else{
-    schDurationTimer.setPeriod(schDuration*60*1000);
-  }
-  switch(schTipoRepeticion){
-
-    case SCH_DAILY://en repeticion diaria solo se comprueba la hora y los minutos
-    if(!schActive && schEnable && (rtc.getHours() == schHour) && (rtc.getMinutes() == schMinute) && (rtc.getSeconds() == 0)){
-      schActive = true;
-      schDurationTimer.start();
-      Serial.print(F("> Schedule activado. Duracion: "));
-      Serial.print(schDuration);
-      Serial.println(F(" minutos"));
-    }
-    break;
-
-    case SCH_WEEKLY:
-    if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0){
-      //0 jueves, 1 viernes, 2 sabado, 3 domingo, 4 lunes, 5 martes, 6 miercoles
-      //rtc.getEpoch();
-      unsigned long dayOfWeek= (rtc.getEpoch() / 86400) % 7;
-      //calculando se el dia corresponde a alguno de los elegidos
-      bool diaActivo = (schCoils[0] && dayOfWeek == 4) || (schCoils[1] && dayOfWeek == 5) || (schCoils[2] && dayOfWeek == 6) || (schCoils[3] && dayOfWeek == 0) || (schCoils[4] && dayOfWeek == 1) || (schCoils[5] && dayOfWeek == 2) || (schCoils[6] && dayOfWeek == 3);
-      if(diaActivo){
-        schActive = true;
-        schDurationTimer.start();
-        Serial.println(F("Schedule activado"));
-      }
-    }
-    break;
-
-    case SCH_MONTHLY:
-    if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0 && rtc.getDay() == schDay){
-      schActive = true;
-      schDurationTimer.start();
-      Serial.println(F("Schedule activado"));
-    }
-    break;
-
-    case SCH_DATE:
-    if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0 && rtc.getDay() == schDay && rtc.getMonth() == schMonth){
-      schActive = true;
-      schDurationTimer.start();
-      Serial.println(F("Schedule activado"));
-    }
-    break;
-  }
-
-  schCoils[8] = schActive;
-
+//   //los siguientes "if" hacen que si se disminuye la cantidad menos que el limite inferior esta pasa a su limite superior
+//   // si es menor a 0 pasa a 23 y si es mayor a 23 pasa a 0
+//   //la forma en que esta implementado es porque la variable es sin signo osea que ninca va a ser menor a 0
+//   //cuando se disminuye desde 0 entonces pasa a ser un numero muy grande
+//   //por lo que solo basta detectar que sea un numero muy grande
+//   if(schHolding[0]>1000){//restringiendo las horas
+//     schHour = 23;
+//   } else if (schHolding[0]>23){
+//     schHour = 0;
+//   } else{
+//     schHour = schHolding[0];
+//   }
+//
+//   if(schHolding[1]>1000){//restringiendo los minutos
+//     schMinute = 59;
+//   } else if (schHolding[1]>59){
+//     schMinute = 0;
+//   }else{
+//     schMinute = schHolding[1];
+//   }
+//
+//   if(schHolding[3]<1){//restringiendo los meses
+//     schMonth = 12;
+//   } else if (schHolding[3]>12){
+//     schMonth = 1;
+//   }else{
+//     schMonth = schHolding[3];
+//   }
+//
+//   if(schHolding[4]>50000){//duracion entre 0 y 30 dias (minutos)
+//     schDuration = 43200;
+//   } else if (schHolding[4]>43200){
+//     schDuration = 0;
+//   }else{
+//     schDuration = schHolding[4];
+//   }
+//
+//   switch (schMonth){//se restringen los dias dependiendo el mes
+//     case 1://enero
+//     case 3://marzo
+//     case 5://mayo
+//     case 7://julio
+//     case 8://agosto
+//     case 10://octubre
+//     case 12://diciembre
+//     //se restringen los dias a 31 cuando son los meses correspondientes
+//     if(schHolding[2]<1){
+//       schDay = 31;
+//     } else if (schHolding[2]>31){
+//       schDay = 1;
+//     }else{
+//       schDay = schHolding[2];
+//     }
+//     break;
+//
+//     case 2://febrero
+//     //se restringe a 28 dias si es febrero
+//     if(schHolding[2]<1){
+//       schDay = 28;
+//     } else if (schHolding[2]>28){
+//       schDay = 1;
+//     }else{
+//       schDay = schHolding[2];
+//     }
+//     break;
+//
+//     case 4://abril
+//     case 6://junio
+//     case 9://septiembre
+//     case 11://noviembre
+//     //se restringe a 30 dias en los meses correspondientes
+//     if(schHolding[2]<1){
+//       schDay = 30;
+//     } else if (schHolding[2]>30){
+//       schDay = 1;
+//     }else{
+//       schDay = schHolding[2];
+//     }
+//     break;
+//
+//     default:
+//     //se restringe a 30 dias por defecto
+//     if(schHolding[2]<1){
+//       schDay = 30;
+//     } else if (schHolding[2]>30){
+//       schDay = 1;
+//     }else{
+//       schDay = schHolding[2];
+//     }
+//     break;
+//
+//   }
+//   //GUARDANDO RESULTADO EN EL ARRAY
+//   schHolding[0] = schHour;
+//   schHolding[1] = schMinute;
+//   schHolding[2] = schDay;
+//   schHolding[3] = schMonth;
+//   schHolding[4] = schDuration;
+//
+//
+//   //////////////////////////////////////////////////////
+//   //coils
+//
+//   //enable
+//   schEnable = schCoils[7];
+//
+//   //test off/on load
+//   if(schCoils[13] && schTestLoad == SCH_TEST_ON_LOAD){//cambiando a test off load
+//     schTestLoad = SCH_TEST_OFF_LOAD;
+//     schCoils[14]=false;
+//   }
+//   if(schCoils[14] && schTestLoad == SCH_TEST_OFF_LOAD){//cambiando a test on load
+//     schTestLoad = SCH_TEST_ON_LOAD;
+//     schCoils[13]=false;
+//   }
+//
+//   //transition open/closed
+//   if(schCoils[15] && schTransition == SCH_TRANSITION_CLOSED){//cambiando a transition open
+//     schTransition = SCH_TRANSITION_OPEN;
+//     schCoils[16]=false;
+//   }
+//   if(schCoils[16] && schTransition == SCH_TRANSITION_OPEN){//cambiando a transition closed
+//     schTransition = SCH_TRANSITION_CLOSED;
+//     schCoils[15]=false;
+//   }
+//   //load demand Inhibit
+//   schLoadDemandInhibit = schCoils[17];
+//
+//   //tipo repeticion
+//   if(schCoils[9] && schTipoRepeticion !=SCH_DAILY){//activar la repeticion diaria y desactivando las demas
+//     schTipoRepeticion = SCH_DAILY;
+//     schCoils[10] = false;
+//     schCoils[11] = false;
+//     schCoils[12] = false;
+//   }
+//   if(schCoils[10] && schTipoRepeticion !=SCH_WEEKLY){//activar la repeticion semanal y desactivando las demas
+//     schTipoRepeticion = SCH_WEEKLY;
+//     schCoils[9] = false;
+//     schCoils[11] = false;
+//     schCoils[12] = false;
+//   }
+//   if(schCoils[11] && schTipoRepeticion !=SCH_MONTHLY){//activar la repeticion mensual y desactivando las demas
+//     schTipoRepeticion = SCH_MONTHLY;
+//     schCoils[10] = false;
+//     schCoils[9] = false;
+//     schCoils[12] = false;
+//   }
+//   if(schCoils[12] && schTipoRepeticion !=SCH_DATE){//activar activacion en fecha y desactivando las demas
+//     schTipoRepeticion = SCH_DATE;
+//     schCoils[10] = false;
+//     schCoils[11] = false;
+//     schCoils[9] = false;
+//   }
+//
+//   //computando si se activa el schedule
+//   if(schDuration == 0){
+//     schDurationTimer.setPeriod(2000);//TIMER DE 2 SEGUNDOS PARA DESACTIVAR EL SCHEDULE
+//   }else{
+//     schDurationTimer.setPeriod(schDuration*60*1000);
+//   }
+//   switch(schTipoRepeticion){
+//
+//     case SCH_DAILY://en repeticion diaria solo se comprueba la hora y los minutos
+//     if(!schActive && schEnable && (rtc.getHours() == schHour) && (rtc.getMinutes() == schMinute) && (rtc.getSeconds() == 0)){
+//       schActive = true;
+//       schDurationTimer.start();
+//       Serial.print(F("> Schedule activado. Duracion: "));
+//       Serial.print(schDuration);
+//       Serial.println(F(" minutos"));
+//     }
+//     break;
+//
+//     case SCH_WEEKLY:
+//     if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0){
+//       //0 jueves, 1 viernes, 2 sabado, 3 domingo, 4 lunes, 5 martes, 6 miercoles
+//       //rtc.getEpoch();
+//       unsigned long dayOfWeek= (rtc.getEpoch() / 86400) % 7;
+//       //calculando se el dia corresponde a alguno de los elegidos
+//       bool diaActivo = (schCoils[0] && dayOfWeek == 4) || (schCoils[1] && dayOfWeek == 5) || (schCoils[2] && dayOfWeek == 6) || (schCoils[3] && dayOfWeek == 0) || (schCoils[4] && dayOfWeek == 1) || (schCoils[5] && dayOfWeek == 2) || (schCoils[6] && dayOfWeek == 3);
+//       if(diaActivo){
+//         schActive = true;
+//         schDurationTimer.start();
+//         Serial.println(F("Schedule activado"));
+//       }
+//     }
+//     break;
+//
+//     case SCH_MONTHLY:
+//     if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0 && rtc.getDay() == schDay){
+//       schActive = true;
+//       schDurationTimer.start();
+//       Serial.println(F("Schedule activado"));
+//     }
+//     break;
+//
+//     case SCH_DATE:
+//     if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0 && rtc.getDay() == schDay && rtc.getMonth() == schMonth){
+//       schActive = true;
+//       schDurationTimer.start();
+//       Serial.println(F("Schedule activado"));
+//     }
+//     break;
+//   }
+//
+//   schCoils[8] = schActive;
+//
 }
 
 //////////////////////////////////////////////////////////////
@@ -1017,9 +1017,13 @@ void utilidades(){
     frame = frameNumbers = 0;
 
     //test
-    Serial.print("Nivel tanque: ");
-    unsigned int tes = modulos[1].analogeInputD;
-    Serial.println(modbusTCPServer.holdingRegisterRead(255));
+    Serial.print("Plc fn: ");
+    for(int i=0;i<20;i++){
+      if(modulos[1].plcFunctions[i]){
+        Serial.println(customAlarmsString[i]);
+      }
+    }
+    Serial.println();
   }
 
 
