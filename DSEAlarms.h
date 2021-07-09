@@ -151,6 +151,7 @@
 // #define ALARM146 "GEN OVER NEG SEQ VOLTS"
 // #define ALARM147 "GEN ASYMMETRY HIGH"
 String DSEAlarmsString[148];
+String customAlarmsString[20];
 
 void asignAlarm(){
   DSEAlarmsString[0] = F("EMERGENCY STOP");
@@ -332,9 +333,32 @@ void asignAlarm(){
   DSEAlarmsString[141] = F("MSC LINK 1 AND 2 FAILURE");
   DSEAlarmsString[142] = F("ELECTRICAL TRIP FROM 8660");
   DSEAlarmsString[143] = F("AVR CAN RED STOP LAMP FAULT");
-  
+
   DSEAlarmsString[144] = F("GEN OVER ZERO SEQ VOLTS");
   DSEAlarmsString[145] = F("GEN UNDER POS SEQ VOLTS");
   DSEAlarmsString[146] = F("GEN OVER NEG SEQ VOLTS");
   DSEAlarmsString[147] = F("GEN ASYMMETRY HIGH");
+}
+
+void asignCustomAlarm(){
+  customAlarmsString[0] = F("CUSTOM ALARM 1");
+  customAlarmsString[1] = F("CUSTOM ALARM 2");
+  customAlarmsString[2] = F("CUSTOM ALARM 3");
+  customAlarmsString[3] = F("CUSTOM ALARM 4");
+  customAlarmsString[4] = F("CUSTOM ALARM 5");
+  customAlarmsString[5] = F("CUSTOM ALARM 6");
+  customAlarmsString[6] = F("CUSTOM ALARM 7");
+  customAlarmsString[7] = F("CUSTOM ALARM 8");
+  customAlarmsString[8] = F("CUSTOM ALARM 9");
+  customAlarmsString[9] = F("CUSTOM ALARM 10");
+  customAlarmsString[10] = F("CUSTOM ALARM 11");
+  customAlarmsString[11] = F("CUSTOM ALARM 12");
+  customAlarmsString[12] = F("CUSTOM ALARM 13");
+  customAlarmsString[13] = F("CUSTOM ALARM 14");
+  customAlarmsString[14] = F("CUSTOM ALARM 15");
+  customAlarmsString[15] = F("CUSTOM ALARM 16");
+  customAlarmsString[16] = F("CUSTOM ALARM 17");
+  customAlarmsString[17] = F("CUSTOM ALARM 18");
+  customAlarmsString[18] = F("CUSTOM ALARM 19");
+  customAlarmsString[19] = F("CUSTOM ALARM 20");
 }

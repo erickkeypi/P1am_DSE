@@ -106,6 +106,7 @@ unsigned int genScreen[60];//VARIABLES PARA LA PANTALLA DE GEN
 unsigned int genActual = 1;//GEN DEL CUAL SE ESTA LEYENDO LOS VALORES
 bool genButtonPress = false;//ESTADO DE BOTON DE COMANDO DE GEN
 
+bool muteAllAlarms = false;
 //////////////////////////////////////////////////////
 //MODOS DE LECTURA PARA HACER QUE SOLO LEA MASTERS O GENERADORES
 int modoLectura = READ_MASTER_AND_GEN;
@@ -167,8 +168,8 @@ unsigned int yearTable = 20;//AÑO DE LECTURA
 //////////////////////////////////////////////////////
 //MODULOS DSE
 DSE modulos[NUMBER_OF_DSE] = {
-  DSE(DSE_8660MKII, IPAddress(10, 0, 0,  11), "SBA1"),
-  DSE(DSE_8610MKII, IPAddress(10, 0, 0,  15), "Gen 1"),
+  DSE(DSE_8660MKII, IPAddress(10, 0, 0,  11), "SBA1"),//11
+  DSE(DSE_8610MKII, IPAddress(10, 0, 0,  15), "Gen 1"),//15
   DSE(DSE_8660MKII, IPAddress(10, 0, 0,  12), "SBA2"),
   DSE(DSE_8660MKII, IPAddress(10, 0, 0,  13), "SBB2"),
   DSE(DSE_8660MKII, IPAddress(10, 0, 0,  14), "SBB1"),
@@ -176,6 +177,8 @@ DSE modulos[NUMBER_OF_DSE] = {
   DSE(DSE_8610MKII, IPAddress(10, 0, 0,  17), "Gen 3"),
   DSE(DSE_8610MKII, IPAddress(10, 0, 0,  18), "Gen 4")
 };
+
+
 
 bool changePriority = 0;
 bool oldPriority = 0;
@@ -185,11 +188,17 @@ unsigned int newPriority3 =1;
 unsigned int newPriority4 =1;
 unsigned int newPriority[4] = {1,1,1,1};
 
+unsigned long totalMainsKW = 0;
 
+unsigned long periodoLed = 1000;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////SETUP////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void setup(){
+  pinMode(LED_BUILTIN,OUTPUT);//LED FRONTAL
+  pinMode(SWITCH_BUILTIN,INPUT);//SWITCH FRONTAL
+  Serial.begin(115200);//COMUNICACION SERIAL
+  digitalWrite(LED_BUILTIN,HIGH);
   //////////////////////////////////////////////////////
   //UTILIDADES
   frameEvent.repeat();//EL TIMER SE REINICIA AUTOMATICAMENTE
@@ -202,15 +211,13 @@ void setup(){
 
   asignAlarm();//ASINGANDO EL TEXTO DE LAS ALARMAS AL ARRAY DSEAlarmsString. FUNCION Y ARRAY DE DSEAlarms.h
 
-  pinMode(LED_BUILTIN,OUTPUT);//LED FRONTAL
-  pinMode(SWITCH_BUILTIN,INPUT);//SWITCH FRONTAL
-  Serial.begin(115200);//COMUNICACION SERIAL
   delay(2000);//RETARDO PARA EL INICIO DEL PROGRAMA
 
   Serial.println(F("\n**********INIT**********"));//MARCANDO EL INICIO DEL PROGRAMA
   // Serial.println(F("**< SDU compatible >**"));
-
-  SD_Begin();//INICIANDO MICRO SD
+  if(digitalRead(SWITCH_BUILTIN)){
+    SD_Begin();//INICIANDO MICRO SD
+  }
   Serial.println(F("> Iniciando RTC"));
   rtc.begin();///INICIANDO RTC
 
@@ -270,11 +277,13 @@ void setup(){
 
   //////////////////////////////////////////////////////
   //INICIALIZANDO DATALOGGER
-  SD.remove(F("ACTIVE.csv"));//BORRANDO LAS ALARMAS ACTIVAS
-  dataloggerInit();//INICIANDO EL DATALOGGER
-  dataWriteSD = F("PLC REINICIADO");
-  datalogger();
-  dataloggerRead(rtc.getMonth(),rtc.getYear());//LEYENDO EL DATALOGGER DEL MES Y AÑO ACTUAL
+  if(digitalRead(SWITCH_BUILTIN)){
+    SD.remove(F("ACTIVE.csv"));//BORRANDO LAS ALARMAS ACTIVAS
+    dataloggerInit();//INICIANDO EL DATALOGGER
+    dataWriteSD = F("PLC REINICIADO");
+    datalogger();
+    dataloggerRead(rtc.getMonth(),rtc.getYear());//LEYENDO EL DATALOGGER DEL MES Y AÑO ACTUAL
+  }
   modbusTCPServer.holdingRegisterWrite(1240,rtc.getMonth());
   modbusTCPServer.holdingRegisterWrite(1241,rtc.getYear());
   Serial.println(F("> Setup finalizado"));
@@ -284,6 +293,19 @@ void setup(){
 ////////////////////////////////////////////////////LOOP////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void loop(){
+
+  static unsigned long tiempoLed = millis();
+
+  if(digitalRead(SWITCH_BUILTIN)){
+    periodoLed = 1000;
+  }else{
+    periodoLed = 200;
+  }
+
+  if(millis() - tiempoLed > periodoLed){
+    digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));//PAPADEO DEL LED FRONTAL
+    tiempoLed = millis();
+  }
 
   //LOGICA PARA BUS LIVE Y LA ALARMA COMUN GENERAL
   busLive = generalCommonAlarm = false;
@@ -323,8 +345,9 @@ void loop(){
 
     applyReadMode();//APLICANDO MODO DE LECTURA SEGUN LA VARIABLE "modoLectura"
     readDse();//LEYENDO LAS LOS REGISTROS DE LOS DSE
-    activateAlarms();//REVISANDO LAS ALARMAS PARA AGREGARLAS AL DATALOGGER
-    digitalWrite(LED_BUILTIN,!digitalRead(LED_BUILTIN));//PAPADEO DEL LED FRONTAL
+    if(digitalRead(SWITCH_BUILTIN)){
+      activateAlarms();//REVISANDO LAS ALARMAS PARA AGREGARLAS AL DATALOGGER
+    }
   }
 
   //////////////////////////////////////////////////////
@@ -342,7 +365,9 @@ void loop(){
     yearTable = yearServer;
     tabla = tablaServer;
     modbusTCPServer.holdingRegisterWrite(1243,tabla);//ESCRIBIENDO EN EL REGISTRO EL NUEVO NUMERO DE TABLA QUE SE ESTA MOSTRANDO
-    dataloggerRead(monthTable,yearTable);//MOSTRANDO EL EVENTLOG
+    if(digitalRead(SWITCH_BUILTIN)){
+      dataloggerRead(monthTable,yearTable);//MOSTRANDO EL EVENTLOG
+    }
   }
 
   //////////////////////////////////////////////////////
@@ -354,7 +379,9 @@ void loop(){
     }
     tablaActive = tablaServer;
     modbusTCPServer.holdingRegisterWrite(1563,tablaActive);//ESCRIBIENDO EN EL REGISTRO EL NUEVO NUMERO DE TABLA QUE SE ESTA MOSTRANDO
-    alarmsLoggerRead();//MOSTRANDO LAS ALARMAS ACTIVAS
+    if(digitalRead(SWITCH_BUILTIN)){
+      alarmsLoggerRead();//MOSTRANDO LAS ALARMAS ACTIVAS
+    }
   }
 
   //////////////////////////////////////////////////////

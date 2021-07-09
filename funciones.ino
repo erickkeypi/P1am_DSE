@@ -1,3 +1,4 @@
+//////////////////////////////////////////////////////////////
 void initializeArrays(){//FUNCION QUE INICIALIZA LOS ARRAYS
   Serial.println(F("> Arrays inicializados"));
   eraseErrorComm();
@@ -8,13 +9,13 @@ void initializeArrays(){//FUNCION QUE INICIALIZA LOS ARRAYS
     }
   }
 }
-
+//////////////////////////////////////////////////////////////
 void eraseErrorComm(){
   for(int i=0; i<NUMBER_OF_DSE; i++){
     dseErrorComm[i]=false;//SE DESACTIVA EL ERROR DE CONEXION Y SE INTENTA LA CONEXION
   }
 }
-
+//////////////////////////////////////////////////////////////
 void applyReadMode(){
   for(int d=0;d<NUMBER_OF_DSE;d++){
     switch (modoLectura){//SE CONECTAN LOS MODULOS DE ACUERDO AL MODO DE LECTURA
@@ -40,7 +41,7 @@ void applyReadMode(){
     }
   }
 }
-
+//////////////////////////////////////////////////////////////
 void handleModbusClients(){//funcion que maneja la conexion de los clientes
   EthernetClient newClient = server.accept(); //listen for incoming clients
   if (newClient) { //process new connection if possible
@@ -77,13 +78,13 @@ void handleModbusClients(){//funcion que maneja la conexion de los clientes
     }
   }
 }
-
+//////////////////////////////////////////////////////////////
 void writeStringToRegisters(char _string[], unsigned int _add, unsigned int _size){
   for(int i=0;i<_size;i++){
     modbusTCPServer.holdingRegisterWrite(_add+i,_string[i*2]<<8 | _string[(i*2)+1]);
   }
 }
-
+//////////////////////////////////////////////////////////////
 void readDse(){//esta funcion lee los registros de los DSE
 
   for(int i=0;i<NUMBER_OF_DSE;i++){
@@ -92,6 +93,19 @@ void readDse(){//esta funcion lee los registros de los DSE
     }
     if(modulos[i].connect()){
       modulos[i].update();
+
+      if(muteAllAlarms){//mute all alarms
+        if(modulos[i].beginTransmission(4104,2)){
+          modulos[i].modbusWrite(35706);
+          modulos[i].modbusWrite(29829);
+          modulos[i].endTransmission();
+          Serial.print(F("> "));
+          Serial.print(modulos[i].getName());
+          Serial.println(F(" system key pressed"));
+        } else{
+          dseErrorComm[masterActual]=true;
+        }
+      }
 
       if(masterButtonPress && i == masterActual){//SI SE PRESIONA UN BOTON DE COMANDO ESTE SE ENVIA AL MODULO DSE
         if(modulos[masterActual].beginTransmission(4104,2)){
@@ -179,8 +193,10 @@ void readDse(){//esta funcion lee los registros de los DSE
   }
   // oldPriority = changePriority;
   oldPriority = changePriority;
+  muteAllAlarms = false;
+  modbusTCPServer.coilWrite(4,muteAllAlarms);
 }
-
+//////////////////////////////////////////////////////////////
 void readModuleDate(){//FUNCION QUE LEE LA FECHA DEL MODULO ELEGIDO COMO BASE
   applyReadMode();
   //LEYENDO LA FECHA DEL MODULO BASE Y ACTUALIZANDO EL RTC
@@ -198,23 +214,23 @@ void readModuleDate(){//FUNCION QUE LEE LA FECHA DEL MODULO ELEGIDO COMO BASE
     Serial.println(F("> Error al actualizar RTC. Intentando nuevamente en 10 segundos"));
   }
 }
-
+//////////////////////////////////////////////////////////////
 String twoDigits(long d){//funcion que muestra los numeros siempre con dos digitos
   if(d<10){
     return "0" + String(d);
   }
   return String(d);
 }
-
+//////////////////////////////////////////////////////////////
 String getTime(){//funcion que imprime la hora por serial
   return "Time: " + twoDigits(rtc.getHours()) + ":" + twoDigits(rtc.getMinutes()) + ":" + twoDigits(rtc.getSeconds());
 }
-
+//////////////////////////////////////////////////////////////
 String getDate(){//funcion que imprime la fecha por serial
   return "Date: " + twoDigits(rtc.getDay()) + "/" + twoDigits(rtc.getMonth()) + "/" + twoDigits(rtc.getYear());
 }
 
-
+//////////////////////////////////////////////////////////////
 void updateDseDates(){//FUNCION QUE ACTUALIZA LA FECHA DE LOS DSE TOMANDO UN MODULO BASE
 
   for(int i=0;i<NUMBER_OF_DSE;i++){
@@ -259,7 +275,7 @@ void updateDseDates(){//FUNCION QUE ACTUALIZA LA FECHA DE LOS DSE TOMANDO UN MOD
     }
   }
 }
-
+//////////////////////////////////////////////////////////////
 void writeAlarmsLineModbus(unsigned int _reg,unsigned int _add){//FUNCION PARA ESCRIBIR UNA LINEA DE TEXTO EN LOS REGISTROS MODBUS
   int primeraComa = 0;//GUARDA EL INDICE DE LA PRIMERA COMA
   int segundaComa = 0;//GUARDA EL INDICE DE LA SEGUNDA COMA
@@ -316,7 +332,7 @@ void writeAlarmsLineModbus(unsigned int _reg,unsigned int _add){//FUNCION PARA E
     modbusTCPServer.holdingRegisterWrite(_add+100+j+(_reg*15),buff[j*2] <<8 | buff[j*2+1]);
   }
 }
-
+//////////////////////////////////////////////////////////////
 void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUARDA
 
   static bool alarmaDesactivada = false;
@@ -428,224 +444,224 @@ void activateAlarms(){//FUNCION QUE DETERMINA SI ESTA ACTIVA UNA ALARMA Y LA GUA
     }
   }
 }
-
+//////////////////////////////////////////////////////////////
 void computeSchRegisters(){//FUNCION QUE HACE LOS CALCULOS DEL SCHEDULE
-  //los siguientes "if" hacen que si se disminuye la cantidad menos que el limite inferior esta pasa a su limite superior
-  // si es menor a 0 pasa a 23 y si es mayor a 23 pasa a 0
-  //la forma en que esta implementado es porque la variable es sin signo osea que ninca va a ser menor a 0
-  //cuando se disminuye desde 0 entonces pasa a ser un numero muy grande
-  //por lo que solo basta detectar que sea un numero muy grande
-  if(schHolding[0]>1000){//restringiendo las horas
-    schHour = 23;
-  } else if (schHolding[0]>23){
-    schHour = 0;
-  } else{
-    schHour = schHolding[0];
-  }
-
-  if(schHolding[1]>1000){//restringiendo los minutos
-    schMinute = 59;
-  } else if (schHolding[1]>59){
-    schMinute = 0;
-  }else{
-    schMinute = schHolding[1];
-  }
-
-  if(schHolding[3]<1){//restringiendo los meses
-    schMonth = 12;
-  } else if (schHolding[3]>12){
-    schMonth = 1;
-  }else{
-    schMonth = schHolding[3];
-  }
-
-  if(schHolding[4]>50000){//duracion entre 0 y 30 dias (minutos)
-    schDuration = 43200;
-  } else if (schHolding[4]>43200){
-    schDuration = 0;
-  }else{
-    schDuration = schHolding[4];
-  }
-
-  switch (schMonth){//se restringen los dias dependiendo el mes
-    case 1://enero
-    case 3://marzo
-    case 5://mayo
-    case 7://julio
-    case 8://agosto
-    case 10://octubre
-    case 12://diciembre
-    //se restringen los dias a 31 cuando son los meses correspondientes
-    if(schHolding[2]<1){
-      schDay = 31;
-    } else if (schHolding[2]>31){
-      schDay = 1;
-    }else{
-      schDay = schHolding[2];
-    }
-    break;
-
-    case 2://febrero
-    //se restringe a 28 dias si es febrero
-    if(schHolding[2]<1){
-      schDay = 28;
-    } else if (schHolding[2]>28){
-      schDay = 1;
-    }else{
-      schDay = schHolding[2];
-    }
-    break;
-
-    case 4://abril
-    case 6://junio
-    case 9://septiembre
-    case 11://noviembre
-    //se restringe a 30 dias en los meses correspondientes
-    if(schHolding[2]<1){
-      schDay = 30;
-    } else if (schHolding[2]>30){
-      schDay = 1;
-    }else{
-      schDay = schHolding[2];
-    }
-    break;
-
-    default:
-    //se restringe a 30 dias por defecto
-    if(schHolding[2]<1){
-      schDay = 30;
-    } else if (schHolding[2]>30){
-      schDay = 1;
-    }else{
-      schDay = schHolding[2];
-    }
-    break;
-
-  }
-  //GUARDANDO RESULTADO EN EL ARRAY
-  schHolding[0] = schHour;
-  schHolding[1] = schMinute;
-  schHolding[2] = schDay;
-  schHolding[3] = schMonth;
-  schHolding[4] = schDuration;
-
-
-  //////////////////////////////////////////////////////
-  //coils
-
-  //enable
-  schEnable = schCoils[7];
-
-  //test off/on load
-  if(schCoils[13] && schTestLoad == SCH_TEST_ON_LOAD){//cambiando a test off load
-    schTestLoad = SCH_TEST_OFF_LOAD;
-    schCoils[14]=false;
-  }
-  if(schCoils[14] && schTestLoad == SCH_TEST_OFF_LOAD){//cambiando a test on load
-    schTestLoad = SCH_TEST_ON_LOAD;
-    schCoils[13]=false;
-  }
-
-  //transition open/closed
-  if(schCoils[15] && schTransition == SCH_TRANSITION_CLOSED){//cambiando a transition open
-    schTransition = SCH_TRANSITION_OPEN;
-    schCoils[16]=false;
-  }
-  if(schCoils[16] && schTransition == SCH_TRANSITION_OPEN){//cambiando a transition closed
-    schTransition = SCH_TRANSITION_CLOSED;
-    schCoils[15]=false;
-  }
-  //load demand Inhibit
-  schLoadDemandInhibit = schCoils[17];
-
-  //tipo repeticion
-  if(schCoils[9] && schTipoRepeticion !=SCH_DAILY){//activar la repeticion diaria y desactivando las demas
-    schTipoRepeticion = SCH_DAILY;
-    schCoils[10] = false;
-    schCoils[11] = false;
-    schCoils[12] = false;
-  }
-  if(schCoils[10] && schTipoRepeticion !=SCH_WEEKLY){//activar la repeticion semanal y desactivando las demas
-    schTipoRepeticion = SCH_WEEKLY;
-    schCoils[9] = false;
-    schCoils[11] = false;
-    schCoils[12] = false;
-  }
-  if(schCoils[11] && schTipoRepeticion !=SCH_MONTHLY){//activar la repeticion mensual y desactivando las demas
-    schTipoRepeticion = SCH_MONTHLY;
-    schCoils[10] = false;
-    schCoils[9] = false;
-    schCoils[12] = false;
-  }
-  if(schCoils[12] && schTipoRepeticion !=SCH_DATE){//activar activacion en fecha y desactivando las demas
-    schTipoRepeticion = SCH_DATE;
-    schCoils[10] = false;
-    schCoils[11] = false;
-    schCoils[9] = false;
-  }
-
-  //computando si se activa el schedule
-  if(schDuration == 0){
-    schDurationTimer.setPeriod(2000);//TIMER DE 2 SEGUNDOS PARA DESACTIVAR EL SCHEDULE
-  }else{
-    schDurationTimer.setPeriod(schDuration*60*1000);
-  }
-  switch(schTipoRepeticion){
-
-    case SCH_DAILY://en repeticion diaria solo se comprueba la hora y los minutos
-    if(!schActive && schEnable && (rtc.getHours() == schHour) && (rtc.getMinutes() == schMinute) && (rtc.getSeconds() == 0)){
-      schActive = true;
-      schDurationTimer.start();
-      Serial.print(F("> Schedule activado. Duracion: "));
-      Serial.print(schDuration);
-      Serial.println(F(" minutos"));
-    }
-    break;
-
-    case SCH_WEEKLY:
-    if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0){
-      //0 jueves, 1 viernes, 2 sabado, 3 domingo, 4 lunes, 5 martes, 6 miercoles
-      //rtc.getEpoch();
-      unsigned long dayOfWeek= (rtc.getEpoch() / 86400) % 7;
-      //calculando se el dia corresponde a alguno de los elegidos
-      bool diaActivo = (schCoils[0] && dayOfWeek == 4) || (schCoils[1] && dayOfWeek == 5) || (schCoils[2] && dayOfWeek == 6) || (schCoils[3] && dayOfWeek == 0) || (schCoils[4] && dayOfWeek == 1) || (schCoils[5] && dayOfWeek == 2) || (schCoils[6] && dayOfWeek == 3);
-      if(diaActivo){
-        schActive = true;
-        schDurationTimer.start();
-        Serial.println(F("Schedule activado"));
-      }
-    }
-    break;
-
-    case SCH_MONTHLY:
-    if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0 && rtc.getDay() == schDay){
-      schActive = true;
-      schDurationTimer.start();
-      Serial.println(F("Schedule activado"));
-    }
-    break;
-
-    case SCH_DATE:
-    if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0 && rtc.getDay() == schDay && rtc.getMonth() == schMonth){
-      schActive = true;
-      schDurationTimer.start();
-      Serial.println(F("Schedule activado"));
-    }
-    break;
-  }
-
-  schCoils[8] = schActive;
-
+//   //los siguientes "if" hacen que si se disminuye la cantidad menos que el limite inferior esta pasa a su limite superior
+//   // si es menor a 0 pasa a 23 y si es mayor a 23 pasa a 0
+//   //la forma en que esta implementado es porque la variable es sin signo osea que ninca va a ser menor a 0
+//   //cuando se disminuye desde 0 entonces pasa a ser un numero muy grande
+//   //por lo que solo basta detectar que sea un numero muy grande
+//   if(schHolding[0]>1000){//restringiendo las horas
+//     schHour = 23;
+//   } else if (schHolding[0]>23){
+//     schHour = 0;
+//   } else{
+//     schHour = schHolding[0];
+//   }
+//
+//   if(schHolding[1]>1000){//restringiendo los minutos
+//     schMinute = 59;
+//   } else if (schHolding[1]>59){
+//     schMinute = 0;
+//   }else{
+//     schMinute = schHolding[1];
+//   }
+//
+//   if(schHolding[3]<1){//restringiendo los meses
+//     schMonth = 12;
+//   } else if (schHolding[3]>12){
+//     schMonth = 1;
+//   }else{
+//     schMonth = schHolding[3];
+//   }
+//
+//   if(schHolding[4]>50000){//duracion entre 0 y 30 dias (minutos)
+//     schDuration = 43200;
+//   } else if (schHolding[4]>43200){
+//     schDuration = 0;
+//   }else{
+//     schDuration = schHolding[4];
+//   }
+//
+//   switch (schMonth){//se restringen los dias dependiendo el mes
+//     case 1://enero
+//     case 3://marzo
+//     case 5://mayo
+//     case 7://julio
+//     case 8://agosto
+//     case 10://octubre
+//     case 12://diciembre
+//     //se restringen los dias a 31 cuando son los meses correspondientes
+//     if(schHolding[2]<1){
+//       schDay = 31;
+//     } else if (schHolding[2]>31){
+//       schDay = 1;
+//     }else{
+//       schDay = schHolding[2];
+//     }
+//     break;
+//
+//     case 2://febrero
+//     //se restringe a 28 dias si es febrero
+//     if(schHolding[2]<1){
+//       schDay = 28;
+//     } else if (schHolding[2]>28){
+//       schDay = 1;
+//     }else{
+//       schDay = schHolding[2];
+//     }
+//     break;
+//
+//     case 4://abril
+//     case 6://junio
+//     case 9://septiembre
+//     case 11://noviembre
+//     //se restringe a 30 dias en los meses correspondientes
+//     if(schHolding[2]<1){
+//       schDay = 30;
+//     } else if (schHolding[2]>30){
+//       schDay = 1;
+//     }else{
+//       schDay = schHolding[2];
+//     }
+//     break;
+//
+//     default:
+//     //se restringe a 30 dias por defecto
+//     if(schHolding[2]<1){
+//       schDay = 30;
+//     } else if (schHolding[2]>30){
+//       schDay = 1;
+//     }else{
+//       schDay = schHolding[2];
+//     }
+//     break;
+//
+//   }
+//   //GUARDANDO RESULTADO EN EL ARRAY
+//   schHolding[0] = schHour;
+//   schHolding[1] = schMinute;
+//   schHolding[2] = schDay;
+//   schHolding[3] = schMonth;
+//   schHolding[4] = schDuration;
+//
+//
+//   //////////////////////////////////////////////////////
+//   //coils
+//
+//   //enable
+//   schEnable = schCoils[7];
+//
+//   //test off/on load
+//   if(schCoils[13] && schTestLoad == SCH_TEST_ON_LOAD){//cambiando a test off load
+//     schTestLoad = SCH_TEST_OFF_LOAD;
+//     schCoils[14]=false;
+//   }
+//   if(schCoils[14] && schTestLoad == SCH_TEST_OFF_LOAD){//cambiando a test on load
+//     schTestLoad = SCH_TEST_ON_LOAD;
+//     schCoils[13]=false;
+//   }
+//
+//   //transition open/closed
+//   if(schCoils[15] && schTransition == SCH_TRANSITION_CLOSED){//cambiando a transition open
+//     schTransition = SCH_TRANSITION_OPEN;
+//     schCoils[16]=false;
+//   }
+//   if(schCoils[16] && schTransition == SCH_TRANSITION_OPEN){//cambiando a transition closed
+//     schTransition = SCH_TRANSITION_CLOSED;
+//     schCoils[15]=false;
+//   }
+//   //load demand Inhibit
+//   schLoadDemandInhibit = schCoils[17];
+//
+//   //tipo repeticion
+//   if(schCoils[9] && schTipoRepeticion !=SCH_DAILY){//activar la repeticion diaria y desactivando las demas
+//     schTipoRepeticion = SCH_DAILY;
+//     schCoils[10] = false;
+//     schCoils[11] = false;
+//     schCoils[12] = false;
+//   }
+//   if(schCoils[10] && schTipoRepeticion !=SCH_WEEKLY){//activar la repeticion semanal y desactivando las demas
+//     schTipoRepeticion = SCH_WEEKLY;
+//     schCoils[9] = false;
+//     schCoils[11] = false;
+//     schCoils[12] = false;
+//   }
+//   if(schCoils[11] && schTipoRepeticion !=SCH_MONTHLY){//activar la repeticion mensual y desactivando las demas
+//     schTipoRepeticion = SCH_MONTHLY;
+//     schCoils[10] = false;
+//     schCoils[9] = false;
+//     schCoils[12] = false;
+//   }
+//   if(schCoils[12] && schTipoRepeticion !=SCH_DATE){//activar activacion en fecha y desactivando las demas
+//     schTipoRepeticion = SCH_DATE;
+//     schCoils[10] = false;
+//     schCoils[11] = false;
+//     schCoils[9] = false;
+//   }
+//
+//   //computando si se activa el schedule
+//   if(schDuration == 0){
+//     schDurationTimer.setPeriod(2000);//TIMER DE 2 SEGUNDOS PARA DESACTIVAR EL SCHEDULE
+//   }else{
+//     schDurationTimer.setPeriod(schDuration*60*1000);
+//   }
+//   switch(schTipoRepeticion){
+//
+//     case SCH_DAILY://en repeticion diaria solo se comprueba la hora y los minutos
+//     if(!schActive && schEnable && (rtc.getHours() == schHour) && (rtc.getMinutes() == schMinute) && (rtc.getSeconds() == 0)){
+//       schActive = true;
+//       schDurationTimer.start();
+//       Serial.print(F("> Schedule activado. Duracion: "));
+//       Serial.print(schDuration);
+//       Serial.println(F(" minutos"));
+//     }
+//     break;
+//
+//     case SCH_WEEKLY:
+//     if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0){
+//       //0 jueves, 1 viernes, 2 sabado, 3 domingo, 4 lunes, 5 martes, 6 miercoles
+//       //rtc.getEpoch();
+//       unsigned long dayOfWeek= (rtc.getEpoch() / 86400) % 7;
+//       //calculando se el dia corresponde a alguno de los elegidos
+//       bool diaActivo = (schCoils[0] && dayOfWeek == 4) || (schCoils[1] && dayOfWeek == 5) || (schCoils[2] && dayOfWeek == 6) || (schCoils[3] && dayOfWeek == 0) || (schCoils[4] && dayOfWeek == 1) || (schCoils[5] && dayOfWeek == 2) || (schCoils[6] && dayOfWeek == 3);
+//       if(diaActivo){
+//         schActive = true;
+//         schDurationTimer.start();
+//         Serial.println(F("Schedule activado"));
+//       }
+//     }
+//     break;
+//
+//     case SCH_MONTHLY:
+//     if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0 && rtc.getDay() == schDay){
+//       schActive = true;
+//       schDurationTimer.start();
+//       Serial.println(F("Schedule activado"));
+//     }
+//     break;
+//
+//     case SCH_DATE:
+//     if(!schActive && schEnable && rtc.getHours() == schHour && rtc.getMinutes() == schMinute && rtc.getSeconds() == 0 && rtc.getDay() == schDay && rtc.getMonth() == schMonth){
+//       schActive = true;
+//       schDurationTimer.start();
+//       Serial.println(F("Schedule activado"));
+//     }
+//     break;
+//   }
+//
+//   schCoils[8] = schActive;
+//
 }
 
-
+//////////////////////////////////////////////////////////////
 ////MODBUS
 void readModbusServerCoils(){//FUNCION QUE LEE LOS COILS
   updateModulesDates = modbusTCPServer.coilRead(0);
   masterButtonPress = modbusTCPServer.coilRead(1);
   genButtonPress = modbusTCPServer.coilRead(2);
   changePriority = modbusTCPServer.coilRead(3);
-
+  muteAllAlarms = modbusTCPServer.coilRead(4);
 
   // gen1CommonAlarm = modbusTCPServer.coilRead(21);
   // gen2CommonAlarm = modbusTCPServer.coilRead(22);
@@ -661,7 +677,7 @@ void readModbusServerCoils(){//FUNCION QUE LEE LOS COILS
     schCoils[i] = modbusTCPServer.coilRead(i+30);
   }
 }
-
+//////////////////////////////////////////////////////////////
 void writeModbusCoils(){//FUNCION QUE ESCRIBE LOS COILS
   modbusTCPServer.coilWrite(0,updateModulesDates);
   modbusTCPServer.coilWrite(1,masterButtonPress);
@@ -677,7 +693,7 @@ void writeModbusCoils(){//FUNCION QUE ESCRIBE LOS COILS
     modbusTCPServer.coilWrite(i+50,dseErrorComm[i]);
   }
 }
-//
+////////////////////////////////////////////////////////////////
 void writeModbusDiscreteInputs() {//FUNCION QUE ESCRIBE LAS ENTRADAS DISCRETAS
   for(int i=0;i<NUMBER_OF_DSE;i++){
     modbusTCPServer.discreteInputWrite((i*10),modulos[i].mainsAvailable);
@@ -696,11 +712,11 @@ void writeModbusDiscreteInputs() {//FUNCION QUE ESCRIBE LAS ENTRADAS DISCRETAS
     modbusTCPServer.discreteInputWrite(100+i,dseErrorComm[i]);
   }
 }
-//
+////////////////////////////////////////////////////////////////
 void writeModbusInputRegisters() {//FUNCION QUE ESCRIBE LOS INPUTS
 
 }
-
+//////////////////////////////////////////////////////////////
 void readModbusServerHoldingRegisters(){//FUNCION QUE LEE LOS HOLDING
 
   for(int i=0;i<5;i++){//leyendo registros del schedule
@@ -724,15 +740,16 @@ void readModbusServerHoldingRegisters(){//FUNCION QUE LEE LOS HOLDING
   modbusTCPServer.holdingRegisterWrite(734,constrain(modbusTCPServer.holdingRegisterRead(734),1,32));
   modbusTCPServer.holdingRegisterWrite(735,constrain(modbusTCPServer.holdingRegisterRead(735),1,32));
 }
-//
+////////////////////////////////////////////////////////////////
 void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
   //escribiendo registros del schedule
   for(int i=0;i<5;i++){
     modbusTCPServer.holdingRegisterWrite(i+10,schHolding[i]);
   }
   //ESCRIBIENDO REGISTROS DE LA PANTALLA PRINCIPAL
+  totalMainsKW = 0;
   for(int i=0;i<NUMBER_OF_DSE;i++){
-    modbusTCPServer.holdingRegisterWrite(100+(i*20),modulos[i].HZ);
+    modbusTCPServer.holdingRegisterWrite(100+(i*20),modulos[i].HZ);//HZ
     modbusTCPServer.holdingRegisterWrite(101+(i*20),modulos[i].V>>16);
     modbusTCPServer.holdingRegisterWrite(102+(i*20),modulos[i].V);
     modbusTCPServer.holdingRegisterWrite(103+(i*20),modulos[i].KW>>16);
@@ -741,6 +758,9 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
     modbusTCPServer.holdingRegisterWrite(106+(i*20),modulos[i].KVAR>>16);
     modbusTCPServer.holdingRegisterWrite(107+(i*20),modulos[i].KVAR);
     modbusTCPServer.holdingRegisterWrite(108+(i*20),modulos[i].mode);
+    // if(modulos[i].model == DSE_8660MKII){
+    //   totalMainsKW += modulos[i].KW;
+    // }
   }
 
   //ESCRIBIENDO LOS REGISTROS DE LA PANTALLA DE MASTER
@@ -860,9 +880,8 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
     modbusTCPServer.holdingRegisterWrite(645,modulos[genActual].KWH>>16);
     modbusTCPServer.holdingRegisterWrite(646,modulos[genActual].KWH);
     modbusTCPServer.holdingRegisterWrite(647,modulos[genActual].mode);
-
-
     modbusTCPServer.holdingRegisterWrite(657,modulos[genActual].oilTemperature);
+    modbusTCPServer.holdingRegisterWrite(255,modulos[genActual].analogeInputD);
     writeStringToRegisters(modulos[genActual].getName(),648,6);
   }
   //ESCRIBIENDO REGISTROS DE LA PANTALLA DE BUS
@@ -974,7 +993,7 @@ void writeModbusHoldingRegisters(){//FUNCION QUE ESCRIBE LOS HOLDING
 
 }
 //
-//
+////////////////////////////////////////////////////////////////
 void utilidades(){
   //CALCULANDO EL TIEMPO DE EJECUCION DE UN CICLO DE PROGRAMA (FRAME)
   static unsigned int frameNumbers =0;
@@ -996,11 +1015,20 @@ void utilidades(){
 
     Serial.println();
     frame = frameNumbers = 0;
+
+    //test
+    Serial.print("Plc fn: ");
+    for(int i=0;i<20;i++){
+      if(modulos[1].plcFunctions[i]){
+        Serial.println(customAlarmsString[i]);
+      }
+    }
+    Serial.println();
   }
 
 
 }
-
+//////////////////////////////////////////////////////////////
 void printMemory(){//FUNCION QUE IMPRIME POR SERIAL LA MEMORIA DISPONIBLE
   Serial.print(F("> MEM FREE: "));
   Serial.print(freeMemory(), DEC);
@@ -1010,11 +1038,11 @@ void printMemory(){//FUNCION QUE IMPRIME POR SERIAL LA MEMORIA DISPONIBLE
   Serial.print(percent,2);
   Serial.println("%");
 }
-
+//////////////////////////////////////////////////////////////
 void test(){//FUNCION DE PRUEBA
 
 }
-
+//////////////////////////////////////////////////////////////
 void remoteStartOnLoad(int mod){
   if(modulos[mod].connect()){
     modulos[mod].beginTransmission(17920,2);//persisten variable 1 (on load)
@@ -1028,7 +1056,7 @@ void remoteStartOnLoad(int mod){
     modulos[mod].stop();
   }
 }
-
+//////////////////////////////////////////////////////////////
 void remoteStartOffLoad(int mod){
   if(modulos[mod].connect()){
     modulos[mod].beginTransmission(17920,2);//persisten variable 1 (on load)

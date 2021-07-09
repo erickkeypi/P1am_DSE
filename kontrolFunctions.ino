@@ -45,6 +45,7 @@ void modoLecturaCallback(){
 
 void testCallback(){
   Serial.println(F("> Test callback"));
+  muteAllAlarms =true;
   // remoteStartOnLoad(0);
   Serial.println();
 }
